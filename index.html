@@ -3,16 +3,72 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bienvenida - Peluquería</title>
+  <title>Peluquería - Reserva tu cita</title>
   <link rel="icon" href="assets/icon.png" type="image/png" />
   <link rel="stylesheet" href="css/style.css" />
+  <!-- Opcional: Vue.js para interactividad -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
+
+<script>
+  window.addEventListener('scroll', function() {
+    const heroSection = document.querySelector('.hero-section');
+    const heroBg = document.querySelector('.hero-background img');
+    const scrollY = window.scrollY;
+    const maxHeight = window.innerHeight;
+
+    // Calcula opacidad según el scroll
+    let opacity = 1 - (scrollY / maxHeight);
+    if (opacity < 0) opacity = 0;
+
+    // Aplica transformación para zoom suave
+    const scale = 1 + (scrollY * 0.0005); // Zoom lento hacia abajo
+    heroBg.style.transform = `scale(${Math.min(scale, 1.1)})`;
+    heroBg.style.opacity = opacity;
+  });
+</script>
 <body>
-  <div class="container">
-    <img src="assets/icon.png" alt="Logo" class="logo" />
-    <h1>¡Bienvenida a tu peluquería!</h1>
-    <p>Reserva tu cita online de forma segura.</p>
-    <a href="login.html" class="btn">Acceder / Registrarse</a>
+  <header class="header">
+    <div class="logo-container">
+      <img src="assets/logo.png" alt="Logo" class="logo" />
+    </div>
+    <nav class="nav-menu">
+      <ul>
+        <li><a href="#inicio">Inicio</a></li>
+        <li><a href="#sobre-nosotros">Sobre nosotros</a></li>
+        <li><a href="#servicios">Servicios</a></li>
+        <li><a href="#galeria">Galería</a></li>
+        <li><a href="#contacto">Contacto y horario</a></li>
+        <li class="btn-reserva"><a href="login.html">RESERVA TU CITA</a></li>
+      </ul>
+    </nav>
+    <div class="language-switcher">
+      <img src="assets/uk-flag.png" alt="English" width="20" />
+    </div>
+  </header>
+
+<main class="hero-section">
+  <div class="hero-content">
+    <h1>RÚBEN PELUQUEROS</h1>
+    <h2>TU PELUQUERÍA EN VILLANUEVA DEL ARISCAL</h2>
+    <a href="login.html" class="cta-button">RESERVA TU CITA</a>
   </div>
+</main>
+
+<!-- Sección adicional para permitir scroll -->
+<section class="content-section">
+  <h3>Sobre nosotros</h3>
+  <p>Estamos comprometidos con ofrecerte la mejor experiencia en peluquería y barbería...</p>
+</section>
+
+  <footer class="cookie-banner">
+    <p>Utilizamos cookies para ofrecerte la mejor experiencia en nuestra web. Puedes aprender más sobre qué cookies utilizamos o desactivarlas en los <a href="#">ajustes</a>.</p>
+    <div class="cookie-buttons">
+      <button>Aceptar</button>
+      <button>Rechazar</button>
+      <button>Ajustes</button>
+      <button>×</button>
+    </div>
+  </footer>
 </body>
 </html>
