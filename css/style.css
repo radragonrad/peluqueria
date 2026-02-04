@@ -631,3 +631,249 @@ body {
   max-width: 90%;
   font-size: 1rem;
 }
+
+
+/* --- Contacto --- */
+.contact-section {
+  padding: 5rem 0;
+  background: #0f0f0f;
+  color: #f0f0f0;
+}
+
+.contact-section .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.contact-section h2 {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: white;
+}
+
+.contact-section p {
+  text-align: center;
+  color: #ccc;
+  max-width: 600px;
+  margin: 0 auto 3rem;
+}
+
+.contact-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+}
+
+/* Columna izquierda */
+.contact-info h3 {
+  font-size: 1.8rem;
+  margin-bottom: 1.2rem;
+  color: #e75480;
+}
+
+.contact-info p {
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+  color: #ddd;
+}
+
+.contact-details {
+  margin-top: 1.5rem;
+}
+
+.detail-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1.2rem;
+  gap: 1rem;
+}
+
+.detail-item span {
+  font-size: 1.3rem;
+  min-width: 24px;
+}
+
+.detail-item strong {
+  display: block;
+  font-weight: 600;
+}
+
+.detail-item em {
+  font-style: normal;
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+/* Columna derecha */
+.contact-form-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.contact-form input,
+.contact-form select,
+.contact-form textarea {
+  padding: 0.8rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(30, 30, 30, 0.7);
+  color: white;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.contact-form input:focus,
+.contact-form select:focus,
+.contact-form textarea:focus {
+  outline: none;
+  border-color: #e75480;
+}
+
+.contact-form textarea {
+  resize: vertical;
+}
+
+.checkbox {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.checkbox a {
+  color: #e75480;
+  text-decoration: none;
+}
+
+.checkbox a:hover {
+  text-decoration: underline;
+}
+
+.btn {
+  padding: 0.8rem 2rem;
+  background: transparent;
+  border: 2px solid white;
+  color: white;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 1rem;
+}
+
+.btn:hover {
+  background: white;
+  color: black;
+}
+
+/* Testimonios */
+.testimonials {
+  background: rgba(25, 25, 25, 0.7);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(231, 84, 128, 0.2);
+}
+
+.testimonials h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #e75480;
+  text-align: center;
+}
+
+.testimonial-slider {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.testimonial-card {
+  flex: 0 0 280px;
+  background: rgba(40, 40, 40, 0.6);
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.avatar {
+  width: 50px;
+  height: 50px;
+  background: #e75480;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin: 0 auto 1rem;
+}
+
+.stars {
+  color: #ffc107;
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.google-rating {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .contact-content {
+    grid-template-columns: 1fr;
+  }
+
+  .testimonial-slider {
+    flex-wrap: wrap;
+  }
+
+  .testimonial-card {
+    flex: 0 0 calc(50% - 0.75rem);
+  }
+}
+
+@media (max-width: 576px) {
+  .testimonial-card {
+    flex: 0 0 100%;
+  }
+}
+
+.contact-section .container {
+  position: relative;
+}
+
+.contact-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(10px);
+  z-index: -1;
+  opacity: 0.6;
+}
+
+.contact-info h3,
+.contact-info p {
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+}

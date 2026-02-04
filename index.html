@@ -78,6 +78,8 @@
   </div>
 </section>
 
+
+
 <!-- Sección: Nuestros Servicios -->
 <section id="servicios" class="services-section">
   <div class="container">
@@ -85,7 +87,7 @@
     <p class="section-subtitle">Cortes Profesionales</p>
 
     <div class="services-grid">
-      <!-- Servicio 1 -->
+
       <div class="service-card">
         <div class="icon">
           <svg xmlns="http://www.w3.org/2000/svg" id="Layer_1" data-name="Layer 1" viewBox="0 0 24 24">
@@ -97,7 +99,6 @@
         <p>Corte limpio y preciso para hombre o niño. Ideal para el día a día: rápido, ordenado y adaptado a tu estilo.</p>
       </div>
 
-      <!-- Servicio 2 -->
       <div class="service-card">
         <div class="icon">
           <svg id="Layer_1" height="512" viewBox="0 0 24 24" width="512" xmlns="http://www.w3.org/2000/svg" data-name="Layer 1">
@@ -149,10 +150,10 @@
       <!-- Servicio 6 -->
       <div class="service-card">
         <div class="icon">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#e75480" stroke-width="1.5">
-  <path d="M4 12Q8 8 12 12T16 8Q20 12 20 12"/>
-  <path d="M4 16Q8 12 12 16T16 12Q20 16 20 16"/>
-</svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#e75480" stroke-width="1.5">
+            <path d="M4 12Q8 8 12 12T16 8Q20 12 20 12"/>
+            <path d="M4 16Q8 12 12 16T16 12Q20 16 20 16"/>
+          </svg>
         </div>
         <h3>MECHAS</h3>
         <p>Mechas naturales o de contraste. Iluminamos tu look con reflejos personalizados: californianas, babylights o mechas marcadas.</p>
@@ -189,21 +190,96 @@
       <div class="gallery-item">
         <img src="assets/galeria/corte-06.jpg" alt="Corte rizado con flequillo y degradado" loading="lazy" />
       </div>
+      <div class="gallery-item">
+        <img src="assets/galeria/corte-07.jpg" alt="Corte texturizado con degradado medio" loading="lazy" />
+      </div>
+      <div class="gallery-item">
+        <img src="assets/galeria/corte-08.jpg" alt="Corte con efecto mojado y ondas naturales + degradado bajo" loading="lazy" />
+      </div>
       <!-- Añade más si quieres -->
     </div>
   </div>
 </section>
 
+<section id="contacto" class="contact-section">
+  <div class="container">
+    <div class="contact-bg" style="background-image: url('assets/galeria/contact-bg2.jpg');"></div>
+    <h2>CONTACTA CON NOSOTROS</h2>
+    <p>En breve te responderemos para saber más sobre tu consulta</p>
 
-  <footer class="cookie-banner">
-    <p>Utilizamos cookies para ofrecerte la mejor experiencia en nuestra web. Puedes aprender más sobre qué cookies utilizamos o desactivarlas en los <a href="#">ajustes</a>.</p>
-    <div class="cookie-buttons">
-      <button>Aceptar</button>
-      <button>Rechazar</button>
-      <button>Ajustes</button>
-      <button>×</button>
+    <div class="contact-content">
+      <!-- Columna izquierda: info -->
+      <div class="contact-info">
+        <h3>Tu estilo, nuestro arte</h3>
+        <p>En nuestro centro, fusionamos tradición y tendencia para ofrecerte lo mejor en cuidado personal. Desde cortes clásicos y modernos en nuestra barbería, hasta tratamientos faciales y corporales personalizados para hombres y mujeres.</p>
+
+        <div class="contact-details">
+          <div class="detail-item">
+            <span>📞</span>
+            <strong>657 55 33 77</strong>
+          </div>
+          <div class="detail-item">
+            <span>✉️</span>
+            <strong>rgutierrez@gmail.com</strong>
+          </div>
+          <div class="detail-item">
+            <span>📍</span>
+            <strong>C. Nueva, 11, 41808 Villanueva del Ariscal, Sevilla</strong>
+          </div>
+          <div class="detail-item">
+            <span>🕒</span>
+            <strong>Horario:</strong><br>
+            Lunes a viernes: 9:30 – 20:00<br>
+            Sábado: 9:30 – 14:00<br>
+            Domingo: Cerrado<br>           
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna derecha: formulario + testimonios -->
+      <div class="contact-form-wrapper">
+        <form id="contactForm" class="contact-form" action="backend/contact.php" method="POST">
+          <input type="text" name="nombre" placeholder="Nombre y apellido*" required />
+          <input type="tel" name="telefono" placeholder="Teléfono*" required />
+          <input type="email" name="email" placeholder="Email*" required />
+          <select name="servicio" required>
+            <option value="" disabled selected>¿En qué servicio estás interesado?*</option>
+            <option value="Corte clásico">Corte clásico</option>
+            <option value="Corte + barba">Corte + barba</option>
+            <option value="Arreglo de barba">Arreglo de barba</option>
+            <option value="Perfilado de cejas">Perfilado de cejas</option>
+            <option value="Decoloración">Decoloración</option>
+            <option value="Mechas">Mechas</option>
+            <option value="Servicio VIP">Servicio VIP</option>
+            <option value="Otro">Otro</option>
+          </select>
+          <textarea name="mensaje" placeholder="Mensaje" rows="4"></textarea>
+          <label class="checkbox">
+            <input type="checkbox" name="privacidad" required />
+            He leído y acepto la <a href="#" style="color:#e75480;">política de privacidad</a>
+          </label>
+          <button type="submit" class="btn">ENVIAR</button>
+        </form>
+
+
+      </div>
     </div>
-  </footer>
+  </div>
+  <!-- Fondo difuminado -->
+
+</section>
+
+
+<footer class="cookie-banner">
+  <p>Utilizamos cookies para ofrecerte la mejor experiencia en nuestra web. Puedes aprender más sobre qué cookies utilizamos o desactivarlas en los <a href="#">ajustes</a>.</p>
+  <div class="cookie-buttons">
+    <button>Aceptar</button>
+    <button>Rechazar</button>
+    <button>Ajustes</button>
+    <button>×</button>
+  </div>
+</footer>
+
   <!-- Lightbox -->
 <div id="lightbox" class="lightbox">
   <span class="close">&times;</span>
@@ -243,6 +319,38 @@
   document.querySelector('.close').addEventListener('click', function() {
     document.getElementById('lightbox').style.display = 'none';
   });
+
+  document.getElementById('contactForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(this);
+  const submitBtn = this.querySelector('.btn');
+  const originalText = submitBtn.textContent;
+  
+  submitBtn.textContent = 'Enviando...';
+  submitBtn.disabled = true;
+
+  try {
+    const response = await fetch(this.action, {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      alert(result.message);
+      this.reset(); // Limpia el formulario
+    } else {
+      alert('Error: ' + result.message);
+    }
+  } catch (err) {
+    alert('No se pudo conectar con el servidor.');
+  } finally {
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  }
+});
 </script>
 
 </body>
