@@ -247,7 +247,15 @@
 
 </section>
 
-
+<!-- Sección de Reservas (oculta por defecto) -->
+<section id="reservas" style="display:none; padding: 5rem 0; background: #121212;">
+  <div class="container">
+    <h2 style="text-align:center; color:#e75480; margin-bottom:2rem;">Reserva tu cita</h2>
+    <div id="booking-content">
+      <p style="text-align:center; color:#f5f5f5;">Cargando servicios...</p>
+    </div>
+  </div>
+</section>
 
 
 <footer class="main-footer">
@@ -300,12 +308,105 @@
   <img class="lightbox-content" id="lightbox-img">
   <div class="caption"></div>
 </div>
-
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script>
-// Variables globales
-let servicioSeleccionado = null;
+  document.querySelectorAll('.gallery-item img').forEach(img => {
+    img.addEventListener('click', function() {
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightbox-img');
+      const caption = lightbox.querySelector('.caption');
 
-// Verificar autenticación
+      lightboxImg.src = this.src;
+      caption.textContent = this.alt || '';
+      lightbox.style.display = 'block';
+
+      // Cerrar al hacer clic en el overlay
+      lightbox.onclick = function(e) {
+        if (e.target === lightbox) {
+          lightbox.style.display = 'none';
+        }
+      };
+
+      // Cerrar con tecla Esc
+      document.addEventListener('keydown', function closeOnEsc(e) {
+        if (e.key === 'Escape') {
+          lightbox.style.display = 'none';
+          document.removeEventListener('keydown', closeOnEsc);
+        }
+      });
+    });
+  });
+
+  // Cerrar con el botón ×
+  document.querySelector('.close').addEventListener('click', function() {
+    document.getElementById('lightbox').style.display = 'none';
+  });
+
+  document.getElementById('contactForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(this);
+  const submitBtn = this.querySelector('.btn');
+  const originalText = submitBtn.textContent;
+  
+  submitBtn.textContent = 'Enviando...';
+  submitBtn.disabled = true;
+
+  try {
+    const response = await fetch(this.action, {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      alert(result.message);
+      this.reset(); // Limpia el formulario
+    } else {
+      alert('Error: ' + result.message);
+    }
+  } catch (err) {
+    alert('No se pudo conectar con el servidor.');
+  } finally {
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  }
+});
+
+
+
+
+// Función para cargar precios (si usas la versión no-Vue)
+async function loadServicePrices() {
+  // ... tu código actual ...
+}
+
+// Función para mostrar sección de reservas
+function showReservasSection() {
+  const reservasSection = document.getElementById('reservas');
+  if (reservasSection) {
+    reservasSection.style.display = 'block';
+    
+    // Scroll suave
+    setTimeout(() => {
+      const titulo = document.getElementById('reservas-titulo');
+      if (titulo) titulo.scrollIntoView({ behavior: 'smooth' });
+    }, 300);
+  }
+}
+
+
+function selectService(serviceId) {
+  alert('Reserva para el servicio ID: ' + serviceId + ' (próximamente)');
+}
+
+
+
+
+const { createApp, ref, onMounted } = Vue;
+
+// Verificar si el usuario está logueado
 async function checkAuth() {
   try {
     const res = await fetch('./backend/api/check_auth.php');
@@ -316,11 +417,41 @@ async function checkAuth() {
   }
 }
 
+// Crear la app de servicios
+createApp({
+  setup() {
+    const servicios = ref([]);
+    const usuarioLogueado = ref(false);
+
+    onMounted(async () => {
+      // Verificar login
+      usuarioLogueado.value = await checkAuth();
+      
+      // Cargar servicios
+      try {
+        const res = await fetch('./backend/api/get_servicios.php');
+        const data = await res.json();
+        servicios.value = data;
+      } catch (error) {
+        console.error('Error al cargar servicios:', error);
+      }
+    });
+
+    const abrirReserva = (servicio) => {
+      abrirModal(servicio);
+    };
+
+    return {
+      servicios,
+      usuarioLogueado,
+      abrirReserva
+    };
+  }
+}).mount('#app-servicios');
+
 // Cargar horas disponibles
 async function cargarHoras(fecha, duracion) {
   const select = document.getElementById('reserva-hora');
-  if (!select) return;
-  
   select.innerHTML = '<option>Cargando...</option>';
   
   try {
@@ -328,7 +459,7 @@ async function cargarHoras(fecha, duracion) {
     const data = await res.json();
     
     select.innerHTML = '';
-    if (data.horarios?.length > 0) {
+    if (data.horarios && data.horarios.length > 0) {
       data.horarios.forEach(h => {
         if (h.disponible) {
           const option = document.createElement('option');
@@ -348,10 +479,60 @@ async function cargarHoras(fecha, duracion) {
   }
 }
 
+
+document.addEventListener('DOMContentLoaded', async function() {
+  const authStatus = document.getElementById('auth-status');
+  if (!authStatus) return;
+
+  try {
+    const res = await fetch('./backend/api/check_auth.php');
+    const data = await res.json();
+
+    if (data.logged_in && data.rol === 'usuario') {
+      // Usuario logueado: mostrar email + botón de cierre
+      authStatus.innerHTML = `
+        <span style="color:white; margin-right:10px;">${data.email}</span>
+        <a href="logout.php" style="color:#e75480; text-decoration:underline;">Cerrar sesión</a>
+      `;
+      
+      // Cargar precios y mostrar sección de reservas
+      loadServicePrices();
+      showReservasSection();
+    } else {
+      // No logueado: mostrar botón de login
+      authStatus.innerHTML = `<li class="btn-reserva"><a href="login.html">RESERVA TU CITA</a></li>`;
+    }
+  } catch (error) {
+    console.error('Error al verificar autenticación:', error);
+    authStatus.innerHTML = `<li class="btn-reserva"><a href="login.html">RESERVA TU CITA</a></li>`;
+  }
+});
+
+// Función para cargar precios (si usas la versión no-Vue)
+async function loadServicePrices() {
+  // ... tu código actual ...
+}
+
+// Función para mostrar sección de reservas
+function showReservasSection() {
+  const reservasSection = document.getElementById('reservas');
+  if (reservasSection) {
+    reservasSection.style.display = 'block';
+    
+    // Scroll suave
+    setTimeout(() => {
+      const titulo = document.getElementById('reservas-titulo');
+      if (titulo) titulo.scrollIntoView({ behavior: 'smooth' });
+    }, 300);
+  }
+}
+
+
+
 // Confirmar reserva
 async function confirmarReserva() {
-  const fecha = document.getElementById('reserva-fecha')?.value;
-  const hora = document.getElementById('reserva-hora')?.value;
+  const fecha = document.getElementById('reserva-fecha').value;
+  const hora = document.getElementById('reserva-hora').value;
   
   if (!fecha || !hora || !servicioSeleccionado) {
     alert('Por favor, completa todos los campos.');
@@ -385,104 +566,21 @@ async function confirmarReserva() {
 // Abrir modal de reserva
 function abrirModal(servicio) {
   servicioSeleccionado = servicio;
-  const titulo = document.getElementById('reserva-titulo');
-  const fechaInput = document.getElementById('reserva-fecha');
-  const horaSelect = document.getElementById('reserva-hora');
-  const modal = document.getElementById('reserva-modal');
+  document.getElementById('reserva-titulo').textContent = `Reservar: ${servicio.nombre}`;
+  document.getElementById('reserva-fecha').value = '';
+  document.getElementById('reserva-hora').innerHTML = '<option>Selecciona una fecha primero</option>';
+  document.getElementById('reserva-modal').style.display = 'block';
   
-  if (titulo) titulo.textContent = `Reservar: ${servicio.nombre}`;
-  if (fechaInput) {
-    fechaInput.value = '';
-    const hoy = new Date().toISOString().split('T')[0];
-    fechaInput.min = hoy;
-  }
-  if (horaSelect) horaSelect.innerHTML = '<option>Selecciona una fecha primero</option>';
-  if (modal) modal.style.display = 'block';
+  // Establecer fecha mínima (hoy)
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('reserva-fecha').min = hoy;
 }
 
 // Cerrar modal
 function cerrarModal() {
-  const modal = document.getElementById('reserva-modal');
-  if (modal) modal.style.display = 'none';
+  document.getElementById('reserva-modal').style.display = 'none';
 }
 
-// Inicializar Vue
-const { createApp, ref, onMounted } = Vue;
-
-createApp({
-  setup() {
-    const servicios = ref([]);
-    const usuarioLogueado = ref(false);
-
-    onMounted(async () => {
-      // Verificar login
-      usuarioLogueado.value = await checkAuth();
-      
-      // Actualizar auth-status
-      const authStatus = document.getElementById('auth-status');
-      if (authStatus) {
-        if (usuarioLogueado.value) {
-          // Obtener email del usuario
-          const res = await fetch('./backend/api/check_auth.php');
-          const data = await res.json();
-          authStatus.innerHTML = `
-            <span style="color:white; margin-right:10px;">${data.email}</span>
-            <a href="logout.php" style="color:#e75480; text-decoration:underline;">Cerrar sesión</a>
-          `;
-        } else {
-          authStatus.innerHTML = `<li class="btn-reserva"><a href="login.html">RESERVA TU CITA</a></li>`;
-        }
-      }
-      
-      // Cargar servicios
-      try {
-        const res = await fetch('./backend/api/get_servicios.php');
-        const data = await res.json();
-        servicios.value = data;
-      } catch (error) {
-        console.error('Error al cargar servicios:', error);
-      }
-    });
-
-    return {
-      servicios,
-      usuarioLogueado,
-      abrirReserva: abrirModal
-    };
-  }
-}).mount('#app-servicios');
-
-// Eventos para el modal
-document.addEventListener('DOMContentLoaded', () => {
-  const fechaInput = document.getElementById('reserva-fecha');
-  const confirmarBtn = document.getElementById('reserva-confirmar');
-  const cancelarBtn = document.getElementById('reserva-cancelar');
-  const modal = document.getElementById('reserva-modal');
-  
-  if (fechaInput) {
-    fechaInput.addEventListener('change', (e) => {
-      if (servicioSeleccionado && e.target.value) {
-        cargarHoras(e.target.value, servicioSeleccionado.duracion_min);
-      }
-    });
-  }
-  
-  if (confirmarBtn) {
-    confirmarBtn.addEventListener('click', confirmarReserva);
-  }
-  
-  if (cancelarBtn) {
-    cancelarBtn.addEventListener('click', cerrarModal);
-  }
-  
-  if (modal) {
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        cerrarModal();
-      }
-    });
-  }
-});
 </script>
 
 </body>
