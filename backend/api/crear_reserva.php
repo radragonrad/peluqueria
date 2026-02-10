@@ -54,6 +54,17 @@ try {
         echo json_encode(['message' => 'Servicio no válido']);
         exit;
     }
+
+    $peluquero_id = (int)($input['peluquero_id'] ?? 0);
+
+    // Validar peluquero
+    $stmt = $pdo->prepare("SELECT id FROM peluqueros WHERE id = ? AND activo = 1");
+    $stmt->execute([$peluquero_id]);
+    if (!$stmt->fetch()) {
+        http_response_code(400);
+        echo json_encode(['message' => 'Peluquero no válido']);
+        exit;
+    }
     
     // Insertar reserva
     $stmt = $pdo->prepare("INSERT INTO reservas (user_id, servicio_id, fecha, hora) VALUES (?, ?, ?, ?)");
