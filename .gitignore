@@ -1,0 +1,14 @@
+# Dependencias de Node (Vue/Frontend)
+**/node_modules/
+dist/
+.env
+.DS_Store
+
+# Archivos de PHP / Servidor
+**/private/config/db.php
+*.log
+.htaccess_local
+
+# IDEs y Editores
+.vscode/
+.idea/
