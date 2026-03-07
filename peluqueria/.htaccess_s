@@ -1,0 +1,42 @@
+RewriteEngine On
+RewriteBase /
+
+# 1. FORZAR RENDERIZADO HTML PARA PHP (Mantenemos tu configuración exitosa)
+<FilesMatch "\.php$">
+    ForceType text/html
+    Header set Content-Type "text/html; charset=utf-8"
+</FilesMatch>
+
+# 2. EXCEPCIÓN PARA ARCHIVOS FÍSICOS
+# Si el archivo existe (foto, css, js), se sirve directamente
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# --- REGLA ESPECÍFICA PARA ICONS (Refuerzo) ---
+# Si la URL empieza por /icons, detenemos cualquier otra redirección
+RewriteRule ^icons/(.*)$ icons/$1 [L]
+
+# 3. EXCEPCIÓN ESPECÍFICA PARA RUTAS DE VUE (Admin, Servicios, etc.)
+# Esto evita que el servidor intente entrar en carpetas físicas y de el 403
+RewriteRule ^(admin|servicios|login|acceso) index.html [L]
+
+# 4. EXCEPCIÓN PARA ACTIVAR.PHP
+RewriteCond %{REQUEST_URI} ^/activar\.php [NC]
+RewriteRule ^ - [L]
+
+# 5. BLOQUEO: Solo si NO es una ruta de Vue y no hay cookie
+# He movido esto para que no interfiera con el refresco de la App
+RewriteCond %{REQUEST_URI} !^/index\.html
+RewriteCond %{REQUEST_URI} !^/admin
+RewriteCond %{HTTP_COOKIE} !PHPSESSID [NC]
+RewriteCond %{REQUEST_FILENAME} \.php$
+RewriteRule ^(.*)$ /acceso.php [L,R=302]
+
+# 6. VUE ROUTER: Regla general para cualquier otra ruta
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+# Esta línea es la clave: Si la ruta NO contiene /backend/
+RewriteCond %{REQUEST_URI} !^/backend/ [NC]
+RewriteRule . /index.html [L]
+
+
