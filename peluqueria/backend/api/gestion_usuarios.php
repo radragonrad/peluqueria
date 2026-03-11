@@ -93,9 +93,35 @@ try {
             }
 
             if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === 0) {
+                
+                // 1. Buscamos la carpeta uploads relativa a este archivo PHP
+                // Si tu PHP está en /backend/api/gestion_usuarios.php, subimos 3 niveles:
+                $base_path = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . "uploads" . DIRECTORY_SEPARATOR . "avatares" . DIRECTORY_SEPARATOR;
+
+                // 2. Crear carpeta con permisos si no existe
+                if (!file_exists($base_path)) {
+                    mkdir($base_path, 0777, true);
+                }
+
                 $ext = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
-                $avatar_name = time() . "_" . $usuario_id . "." . $ext;
-                move_uploaded_file($_FILES['avatar']['tmp_name'], "../../../public/icons/" . $avatar_name);
+                $avatar_name = "user_" . time() . "_" . $usuario_id . "." . $ext;
+                
+                // Esta será la ruta real en el disco duro (C:/laragon/www/tu-proyecto/uploads/...)
+                $target_file = $base_path . $avatar_name;
+
+                if (move_uploaded_file($_FILES['avatar']['tmp_name'], $target_file)) {
+                    // 3. La URL que guardamos en la DB para que el Navegador la encuentre
+                    // Debe ser relativa a la raíz de tu web
+                    $avatar_url = "/uploads/avatares/" . $avatar_name;
+
+                    // $stmt = $pdo->prepare("UPDATE usuarios SET avatar = ? WHERE id = ?");
+                    // $stmt->execute([$avatar_url, $usuario_id]);
+                    
+                    // Opcional: devuelve éxito al frontend
+                    // echo json_encode(["success" => true, "url" => $avatar_url]);
+                } else {
+                    error_log("Error crítico: No se pudo mover a " . $target_file);
+                }
             }
 
             $sqlP = "INSERT INTO peluqueros (usuario_id, especialidad, activo, avatar) 

@@ -473,91 +473,115 @@ input:checked + .slider:before { transform: translateX(20px); }
 .btn-cancel:hover { background: #dfe4ea; }
 
 @media (max-width: 768px) {
-  .form-grid {
-    grid-template-columns: 1fr; /* Una sola columna en móvil */
-  }
-  
-  .form-grid textarea,
-  .icon-selector-container,
-  .form-actions {
-    grid-column: span 1;
-  }
-  
+  /* 1. Evitar que el botón de menú pise el título */
   .section-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 20px;
+    padding-top: 60px; /* Espacio para el botón flotante del menú */
+    position: relative;
   }
 
+  .header-left {
+    width: 100%;
+  }
+
+  .title-container {
+    flex-wrap: wrap; /* Permite que el badge baje si no hay sitio */
+    gap: 10px;
+  }
+
+  .title-container h1 {
+    font-size: 1.5rem;
+    width: 100%; /* El título ocupa su línea */
+  }
+
+  .badge-count {
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+
+  /* 2. Ajuste de los filtros */
   .header-actions {
     width: 100%;
     flex-direction: column;
-    align-items: stretch;
+    gap: 12px;
   }
 
   .filters {
     flex-direction: column;
-  }
-
-  .search-box input {
     width: 100%;
   }
-}
 
-@media (max-width: 768px) {
-  /* Ocultar encabezados de tabla */
+  .search-box input, .status-select, .btn-nuevo {
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* 3. CORRECCIÓN DE LA TABLA (Basado en tu imagen 2) */
   .custom-table thead {
-    display: none;
-  }
-
-  .custom-table, 
-  .custom-table tbody, 
-  .custom-table tr, 
-  .custom-table td {
-    display: block;
-    width: 100%;
+    display: none; /* Seguimos ocultando el header en móvil */
   }
 
   .custom-table tr {
+    display: block;
     margin-bottom: 15px;
+    padding: 15px;
     border: 1px solid #eee;
     border-radius: 12px;
-    padding: 10px;
     background: #fff;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
   }
 
   .custom-table td {
+    display: flex;
+    justify-content: space-between; /* Label a la izquierda, Dato a la derecha */
+    align-items: center;
+    padding: 10px 0 !important;
+    border-bottom: 1px solid #f8f9fa;
     text-align: right;
-    padding-left: 50%;
-    position: relative;
-    border-bottom: 1px solid #f9f9f9;
   }
 
   .custom-table td:last-child {
     border-bottom: none;
+    justify-content: center; /* Botón de editar centrado abajo */
+    padding-top: 15px !important;
   }
 
-  /* Insertar el nombre de la columna antes del dato */
+  /* El label (ID, PRECIO, etc) */
   .custom-table td::before {
-    content: attr(data-label); /* Necesitaremos añadir este atributo al HTML */
-    position: absolute;
-    left: 15px;
-    width: 45%;
-    white-space: nowrap;
-    text-align: left;
-    font-weight: bold;
-    color: #888;
+    content: attr(data-label);
+    font-weight: 700;
+    color: #94a3b8;
     font-size: 0.75rem;
     text-transform: uppercase;
+    text-align: left;
   }
 
-  /* Ajuste para que el info de usuario (icono + nombre) se vea bien */
+  /* 4. ARREGLO DEL ICONO Y NOMBRE (user-info) */
   .user-info {
-    justify-content: flex-end;
+    display: flex;
+    flex-direction: row; /* Icono y texto en línea */
+    align-items: center;
+    justify-content: flex-end; /* Todo hacia la derecha del label */
+    gap: 10px;
+    max-width: 65%; /* Para que no pise el label */
+  }
+
+  .table-icon {
+    width: 24px;
+    height: 24px;
+    margin: 0; /* Quitamos márgenes antiguos */
+  }
+
+  .service-name {
+    font-size: 0.9rem;
+    text-align: right;
+  }
+
+  .service-desc {
+    display: none; /* En móvil ocultamos la descripción larga para no ensuciar */
   }
 }
-
 /* Estilo para el precio */
 .price-text {
   font-weight: 700;

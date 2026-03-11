@@ -73,12 +73,10 @@
                 <span>{{ r.servicio_nombre }}</span>
               </div>
             </td>
-            <td data-label="PRECIO">
-                <span class="price-text">{{ r.precio }}€</span>
+            <td data-label="Precio"> <span class="price-text">{{ r.precio }}€</span>
             </td>
 
-            <td data-label="DURACIÓN">
-                <span class="duration-text"><i class="fas fa-hourglass-half"></i> {{ r.duracion }}'</span>
+            <td data-label="Duración"> <span class="duration-text"><i class="fas fa-hourglass-half"></i> {{ r.duracion }}'</span>
             </td>
             <td data-label="Estado">
                 <span :class="['status-badge', obtenerClaseFinal(r)]">
@@ -131,11 +129,14 @@
     </div>
   </div>
   <div v-if="mostrarModalCancel" class="modal-overlay">
-  <div class="modal-content">
+    <div class="modal-content">
     <h3>Anular Cita</h3>
     <p>Cliente: <strong>{{ reservaSeleccionada?.cliente_nombre }}</strong></p>
-    <label>Motivo de la anulación:</label>
-    <textarea v-model="motivoCancelacion" placeholder="Ej: El cliente llamó para avisar que no puede venir..."></textarea>
+    
+    <div class="form-group-alt">
+      <label>Motivo de la anulación:</label>
+      <textarea v-model="motivoCancelacion" placeholder="Ej: El cliente no puede asistir..."></textarea>
+    </div>
     
     <div class="modal-actions">
       <button @click="confirmarAnulacion" class="btn-confirm">Confirmar Anulación</button>
@@ -143,6 +144,26 @@
     </div>
   </div>
 </div>
+
+<div v-if="mostrarConfirmar" class="modal-overlay">
+  <div class="modal-content confirm-modal">
+    <div class="confirm-icon" :class="confirmConfig.tipo">
+      <i :class="confirmConfig.icono"></i>
+    </div>
+    <h3>{{ confirmConfig.titulo }}</h3>
+    <p>{{ confirmConfig.mensaje }}</p>
+    
+    <div class="modal-actions-horizontal">
+      <button @click="ejecutarAccionConfirmada" class="btn-confirm-action">
+        Confirmar
+      </button>
+      <button @click="mostrarConfirmar = false" class="btn-cancel-modal">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
 </template>
 
 <script setup>
@@ -168,11 +189,30 @@ const cargarReservas = async () => {
 };
 
 // Función para completar cita (Validar)
-const completarCita = async (reserva) => {
-  if (confirm(`¿Marcar la cita de ${reserva.cliente_nombre} como completada?`)) {
-    await enviarEstado(reserva.id, 'COMPLETADA');
-    reserva.estado = 'COMPLETADA';
+const mostrarConfirmar = ref(false);
+const confirmConfig = ref({ titulo: '', mensaje: '', icono: '', tipo: '', accion: null });
+
+// Nueva función para completar cita sin el confirm feo
+const completarCita = (reserva) => {
+  confirmConfig.value = {
+    titulo: 'Completar Cita',
+    mensaje: `¿Vas a marcar la cita de ${reserva.cliente_nombre} como finalizada?`,
+    icono: 'fas fa-check-circle',
+    tipo: 'success', // Para el color verde
+    accion: async () => {
+      await enviarEstado(reserva.id, 'COMPLETADA');
+      reserva.estado = 'COMPLETADA';
+    }
+  };
+  mostrarConfirmar.value = true;
+};
+
+// Función genérica para ejecutar lo que el usuario acepte
+const ejecutarAccionConfirmada = async () => {
+  if (confirmConfig.value.accion) {
+    await confirmConfig.value.accion();
   }
+  mostrarConfirmar.value = false;
 };
 
 // Abrir modal de anulación
@@ -427,14 +467,109 @@ onMounted(cargarReservas);
 
 /* RESPONSIVE MODO TARJETA (Copiado de tu AdminServicios) */
 @media (max-width: 768px) {
-  .custom-table td {
-    font-size: 0.8rem; /* Tamaño optimizado para móvil */
-    min-height: 35px;
-    padding: 8px 5px;
+  /* 1. Ajuste del Header para evitar solapamiento */
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    padding-top: 60px; /* Espacio para el botón de menú */
+    border-bottom: none;
   }
 
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .filters {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  /* Inputs a ancho completo */
+  .search-box, .status-select, .date-filter-box, .search-box input {
+    width: 100% !important;
+  }
+
+  /* 2. Transformación de la Tabla a Tarjetas */
+  .custom-table thead {
+    display: none;
+  }
+
+  .custom-table tr {
+    display: block;
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #edf2f7;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  }
+
+  /* Estilos para las filas especiales en móvil */
+  .custom-table tr.fila-proxima {
+    border-left: 6px solid #d69e2e !important;
+  }
+  .custom-table tr.fila-completada {
+    border-left: 6px solid #2ecc71 !important;
+  }
+
+  .custom-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0 !important;
+    border-bottom: 1px solid #f8f9fa;
+    text-align: right;
+  }
+
+  .custom-table td:last-child {
+    border-bottom: none;
+    padding-top: 15px !important;
+    justify-content: center; /* Botones de acción centrados al final */
+  }
+
+  /* Labels a la izquierda */
   .custom-table td::before {
-    font-size: 0.65rem; /* Etiquetas (FECHA, CLIENTE...) más discretas */
+    content: attr(data-label);
+    font-weight: 700;
+    color: #94a3b8;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    text-align: left;
+  }
+
+  /* 3. Ajustes de contenido interno */
+  .date-display {
+    align-items: flex-end;
+    margin: 0;
+  }
+
+  .user-info {
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .service-tag-display {
+    margin: 0;
+    background: #f8fafc;
+  }
+
+  .action-buttons {
+    width: 100%;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .btn-action {
+    font-size: 1.5rem; /* Iconos más grandes para el pulgar */
+  }
+
+  .status-badge {
+    font-size: 0.75rem;
+    padding: 5px 12px;
   }
 }
 
@@ -661,4 +796,147 @@ input[type="date"].status-select {
   color: #4a5568;
   padding: 7px 10px;
 }
+
+/* --- MODAL DE CONFIRMACIÓN --- */
+.confirm-modal {
+  text-align: center;
+  padding: 40px 30px;
+  max-width: 350px;
+}
+
+.confirm-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 20px;
+}
+
+.confirm-icon.success {
+  background: #e6fffa;
+  color: #2ecc71;
+}
+
+.confirm-modal h3 {
+  margin-bottom: 10px;
+  color: #2c3e50;
+}
+
+.confirm-modal p {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-bottom: 25px;
+}
+
+.modal-actions-horizontal {
+  display: flex;
+  flex-direction: column; /* En móvil uno sobre otro, en PC podemos cambiarlo */
+  gap: 10px;
+}
+
+.btn-confirm-action {
+  background: #2ecc71; /* O el color que prefieras según el tipo */
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-cancel-modal {
+  background: #f1f5f9;
+  color: #64748b;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .modal-actions-horizontal {
+    flex-direction: row-reverse;
+    justify-content: center;
+  }
+  .btn-confirm-action, .btn-cancel-modal {
+    flex: 1;
+  }
+}
+
+/* --- CORRECCIÓN VISUAL MODAL ANULACIÓN --- */
+
+.modal-content h3 {
+  color: #1e293b !important; /* Azul muy oscuro, casi negro */
+  font-weight: 800;
+  margin-bottom: 15px;
+  display: block;
+}
+
+.modal-content p {
+  color: #475569 !important; /* Gris oscuro para el texto del cliente */
+  font-size: 0.95rem;
+  margin-bottom: 15px;
+}
+
+.modal-content strong {
+  color: #1e293b; /* Nombre del cliente bien marcado */
+}
+
+.modal-content label {
+  display: block;
+  color: #64748b; /* Gris medio para el label */
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.modal-content textarea {
+  width: 100%;
+  background-color: #f8fafc; /* Fondo ligeramente gris para que se vea el campo */
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  color: #1e293b; /* Texto que escribe el usuario en oscuro */
+  font-family: inherit;
+  resize: none;
+}
+
+.modal-content textarea::placeholder {
+  color: #94a3b8; /* Color del placeholder */
+}
+
+/* Botones del modal de anulación */
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-confirm {
+  background: #ef4444; /* Rojo para anulación */
+  color: white !important;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-close {
+  background: #f1f5f9;
+  color: #475569 !important;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 </style>

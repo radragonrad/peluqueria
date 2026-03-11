@@ -3,35 +3,86 @@
 // __DIR__ asegura que la ruta sea relativa a la ubicación de este archivo
 require_once __DIR__ . '/../../../private/config/db.php';
 
-// 2. Verificación de sesión de administrador
-require_once 'admin_check.php';
-
+header('Content-Type: application/json');
 
 try {
-   
-    // Total de reservas hoy
-    $hoy = date('Y-m-d');
-    $res_hoy = $pdo->query("SELECT COUNT(*) FROM reservas WHERE fecha = '$hoy'")->fetchColumn();
+    // 1. Estadísticas Rápidas (Hoy y Total Clientes)
+    // ---------------------------------------------------------
+    $hoy_db = date('Y-m-d');
     
-    // Total usuarios
-    $total_users = $pdo->query("SELECT COUNT(*) FROM users WHERE rol = 'usuario'")->fetchColumn();
+    // Citas para hoy
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM reservas WHERE fecha = ? AND estado != 'cancelado'");
+    $stmt->execute([$hoy_db]);
+    $stats_hoy = $stmt->fetchColumn();
 
-    // Próximas reservas
-    $stmt = $pdo->query("SELECT r.fecha, r.hora, u.username as cliente, s.nombre as servicio 
-                         FROM reservas r 
-                         JOIN users u ON r.user_id = u.id 
-                         JOIN servicios s ON r.servicio_id = s.id 
-                         WHERE r.fecha >= '$hoy' 
-                         ORDER BY r.fecha ASC LIMIT 10");
-    $proximas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Total clientes únicos
+    $stmt = $pdo->query("SELECT COUNT(*) FROM usuarios WHERE rol = 'usuario' and activo = 1");
+    $stats_clientes = $stmt->fetchColumn();
 
+    // 2. Próximas 5 Reservas (Para la tablita lateral)
+    // ---------------------------------------------------------
+    $stmt = $pdo->prepare("
+        SELECT r.id, r.fecha, r.hora, u.nombre as cliente, s.nombre as servicio 
+        FROM reservas r
+        JOIN usuarios u ON r.user_id = u.id
+        JOIN servicios s ON r.servicio_id = s.id
+        WHERE r.fecha >= ? AND r.estado != 'cancelado'
+        ORDER BY r.fecha ASC, r.hora ASC
+        LIMIT 5
+    ");
+    $stmt->execute([$hoy_db]);
+    $proximas_reservas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 3. Distribución de los próximos 7 días (Para el gráfico)
+    // ---------------------------------------------------------
+    $distribucion = [];
+    $nombres_dias = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+
+    for ($i = 0; $i < 7; $i++) {
+        $fecha_iterada = date('Y-m-d', strtotime("+$i days"));
+        $timestamp = strtotime($fecha_iterada);
+        
+        // Consultamos cuántas citas hay ese día concreto
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM reservas WHERE fecha = ? AND estado != 'cancelado'");
+        $stmt->execute([$fecha_iterada]);
+        $cantidad = $stmt->fetchColumn();
+
+        $distribucion[] = [
+            "nombreDia" => $nombres_dias[date('w', $timestamp)],
+            "soloFecha" => date('d M', $timestamp),
+            "cantidad"  => (int)$cantidad,
+            "esHoy"     => ($i === 0)
+        ];
+    }
+
+    // 4. Servicio más solicitado (Ranking)
+    // ---------------------------------------------------------
+    $stmt = $pdo->query("
+        SELECT s.nombre, COUNT(r.id) as total, s.precio
+        FROM reservas r
+        JOIN servicios s ON r.servicio_id = s.id
+        WHERE r.estado != 'cancelado'
+        GROUP BY r.servicio_id
+        ORDER BY total DESC
+        LIMIT 3
+    ");
+    $ranking_servicios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Servicio estrella (el primero del ranking)
+    $servicio_estrella = $ranking_servicios[0]['nombre'] ?? 'Ninguno';
+
+    // Ajustamos el json_encode final para incluir estos datos
     echo json_encode([
         "stats" => [
-            "hoy" => $res_hoy,
-            "clientes" => $total_users
+            "hoy" => $stats_hoy,
+            "clientes" => $stats_clientes,
+            "estrella" => $servicio_estrella
         ],
-        "proximas_reservas" => $proximas
+        "proximas_reservas" => $proximas_reservas,
+        "distribucion_semanal" => $distribucion,
+        "ranking_servicios" => $ranking_servicios
     ]);
+
 } catch (PDOException $e) {
     echo json_encode(["error" => $e->getMessage()]);
 }

@@ -319,4 +319,103 @@ input:checked + .slider:before { transform: translateX(16px); }
 .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
 input:checked + .slider { background-color: #e75480; }
 input:checked + .slider:before { transform: translateX(16px); }
+
+/* --- RESPONSIVE DESIGN --- */
+
+@media (max-width: 992px) {
+  .servicios-view { padding: 15px; }
+  
+  /* Convertimos la tabla en bloques (cards) */
+  .custom-table, 
+  .custom-table thead, 
+  .custom-table tbody, 
+  .custom-table th, 
+  .custom-table td, 
+  .custom-table tr { 
+    display: block; 
+  }
+
+  /* Ocultamos el header real de la tabla */
+  .custom-table thead tr { 
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  .custom-table tr {
+    border: 1px solid #edf2f7;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    background: white;
+    padding: 10px;
+  }
+
+  .custom-table td {
+    border: none;
+    position: relative;
+    padding-left: 45% !important; /* Espacio para el label */
+    text-align: left;
+    min-height: 45px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Creamos etiquetas falsas usando el atributo data-label o texto fijo */
+  .custom-table td::before {
+    position: absolute;
+    left: 15px;
+    width: 40%;
+    white-space: nowrap;
+    font-weight: 700;
+    color: #64748b;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  /* Etiquetas para cada celda */
+  .custom-table td:nth-of-type(1) { background: #f8fafc; border-radius: 8px; margin-bottom: 10px; padding-left: 15px !important; }
+  .custom-table td:nth-of-type(1)::before { content: ""; } /* El día no necesita label arriba */
+  
+  .custom-table td:nth-of-type(2)::before { content: "Estado"; }
+  .custom-table td:nth-of-type(3)::before { content: "Mañana"; }
+  .custom-table td:nth-of-type(4)::before { content: "Tarde"; }
+  .custom-table td:nth-of-type(5)::before { content: "Acción"; }
+
+  /* Ajuste de inputs en móvil */
+  .time-container-wrapper {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .time-group {
+    flex-wrap: wrap;
+  }
+
+  .time-input.small {
+    width: 80px;
+    font-size: 0.8rem;
+  }
+
+  .text-right {
+    text-align: left !important;
+    justify-content: flex-end;
+    border-top: 1px solid #f1f5f9;
+    margin-top: 5px;
+  }
+
+  .btn-undo {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .title-container h1 { font-size: 1.4rem; }
+  .header-left .breadcrumb { font-size: 0.7rem; }
+  
+  .time-input.small {
+    width: 75px;
+  }
+}
 </style>

@@ -50,6 +50,7 @@ import AdminServicios from '../components/admin/AdminServicios.vue';
 import AdminReservas from '../components/admin/AdminReservas.vue';
 import AdminHorarios from '../components/admin/AdminHorarios.vue';
 import AdminDiasExcepciones from '../components/admin/AdminDiasExcepciones.vue';
+import AdminAgendar from '../components/admin/AdminAgendar.vue';
 
 const router = useRouter();
 const seccionActiva = ref('reportes');
@@ -61,7 +62,8 @@ const etiquetas = {
   servicios: 'Servicios',
   reservas: 'Reservas',
   horarios: 'Horarios',
-  excepciones: 'Excepciones'
+  excepciones: 'Excepciones',
+  agendar: 'Agendar'
 };
 
 const iconos = {
@@ -70,7 +72,8 @@ const iconos = {
   servicios: 'fas fa-concierge-bell',
   reservas: 'fas fa-calendar-check',
   horarios: 'fas fa-clock',
-  excepciones: 'fas fa-calendar-times'
+  excepciones: 'fas fa-calendar-times',
+  agendar: 'fas fa-calendar-check',
 };
 
 const componentes = {
@@ -79,7 +82,8 @@ const componentes = {
   servicios: AdminServicios,
   reservas: AdminReservas,
   horarios: AdminHorarios,
-  excepciones: AdminDiasExcepciones
+  excepciones: AdminDiasExcepciones,
+  agendar: AdminAgendar
 };
 
 const componenteActual = computed(() => componentes[seccionActiva.value]);
