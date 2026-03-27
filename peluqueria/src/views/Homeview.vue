@@ -38,7 +38,7 @@ export default {
         if (res.ok) {
           const data = await res.json();
           if (data.logged_in && data.rol === 'usuario') {
-            store.setUsuarioLogueado(true, data.email);
+            store.setUsuarioLogueado(true, data.email, data.usuario);
           } else {
             store.setUsuarioLogueado(false, '');
           }

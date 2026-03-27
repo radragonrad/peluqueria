@@ -19,7 +19,7 @@ try {
             JOIN peluqueros p ON r.peluquero_id = p.id
             JOIN usuarios u ON p.usuario_id=u.id
             WHERE r.user_id = ?
-            ORDER BY r.fecha DESC, r.hora DESC";
+            ORDER BY r.fecha ASC, r.hora ASC";
             
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$user_id]);

@@ -5,8 +5,13 @@
         <router-link to="/mis-reservas" class="link-reservas">
           Mis Reservas
         </router-link>
-        
-        <span class="user-email" v-if="!isMobile">{{ store.state.emailUsuario }}</span>
+        <router-link to="/promociones" class="promociones">
+          PROMOCIONES
+        </router-link>
+  
+        <span class="user-badge">
+          <i class="fas fa-user-circle"></i> {{ store.state.usuario }}
+        </span>
         
         <button @click="cerrarSesion" class="btn-logout" title="Cerrar sesión">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -22,8 +27,10 @@
       <router-link to="/login" class="btn-cita">
         Reserva tu cita
       </router-link>
+    
     </template>
   </div>
+ 
 </template>
 
 <script>
@@ -45,7 +52,7 @@ export default {
           method: 'POST',
           credentials: 'include'
         });
-        store.setUsuarioLogueado(false, '', null);
+        store.setUsuarioLogueado(false, '', '', null);
         localStorage.clear(); // Limpiamos todo de una vez
         window.location.href = '/inicio';
       } catch (error) {
@@ -133,4 +140,63 @@ export default {
     border-radius: 50px;
   }
 }
+
+/* Contenedor del nombre resaltado */
+.user-badge {
+  background: rgba(188, 150, 103, 0.1); /* Fondo dorado muy suave */
+  color: #e75480; /* Tu dorado corporativo */
+  padding: 6px 15px;
+  border-radius: 50px; /* Forma de píldora */
+  border: 1px solid rgba(188, 150, 103, 0.3);
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: capitalize; /* "rafa" -> "Rafa" */
+  transition: all 0.3s ease;
+  cursor: default;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Efecto al pasar el ratón por encima del área de usuario */
+.user-badge:hover {
+  background: rgba(188, 150, 103, 0.2);
+  border-color: #e75480;
+  transform: translateY(-1px);
+}
+
+/* El icono de usuario (si decides ponerlo) */
+.user-badge i {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+/* Estilo para "Mis Reservas" para que no compita */
+.link-reservas {
+  color: #ffffff !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.8rem;
+  opacity: 0.8;
+  transition: opacity 0.3s;
+}
+
+.link-reservas:hover {
+  opacity: 1;
+  color: #e75480 !important;
+}
+
+/* Ajuste del botón logout para que combine */
+.btn-logout {
+  color: #888;
+  transition: color 0.3s, transform 0.2s;
+}
+
+.btn-logout:hover {
+  color: #ff4d4d; /* Un rojo suave para indicar "salir" */
+  transform: scale(1.1);
+}
+
+
 </style>

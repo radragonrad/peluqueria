@@ -7,7 +7,7 @@
       <div v-if="!store.state.usuarioLogueado" id="auth-status">
         <router-link to="/login" style="color:white; text-decoration:none;" class="cta-button">Reserva tu cita</router-link>
       </div>
-      
+       
     </div>
   </section>
 </template>

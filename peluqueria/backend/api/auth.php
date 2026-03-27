@@ -157,7 +157,7 @@ if ($action === 'register') {
 
     // Configura el enlace según tu entorno (Local o Pro)
     $is_local = ($_SERVER['REMOTE_ADDR'] === '127.0.0.1' || $_SERVER['REMOTE_ADDR'] === '::1');
-    $base_url = $is_local ? "http://localhost:5173" : "https://rgutierrezhairstudio.com";
+    $base_url = $is_local ? "http://localhost/ruben-peluqueria/peluqueria" : "https://rgutierrezhairstudio.com";
     $enlace = $base_url . "/activar.php?token=" . urlencode($token);
 
     $nombre_cliente = htmlspecialchars($input['nombre']);
@@ -235,6 +235,8 @@ if ($action === 'register') {
         'success' => true,
         'rol' => $user['rol'],
         'nombre' => $user['nombre'],
+        'email' => $user['email'],
+        'usuario' => $user['usuario'],
         'id' => $user['id']
     ]);
 

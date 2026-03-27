@@ -9,7 +9,7 @@
             Expertos en estilismo masculino y barbería clásica. Tu imagen, nuestra firma.
           </p>
           <div class="social-pills">
-            <a href="https://www.instagram.com/rgutierrez212" target="_blank" class="social-pill instagram">
+            <a href="https://www.instagram.com/essenciabarberstudy/" target="_blank" class="social-pill instagram">
               <i class="fab fa-instagram"></i>
             </a>
             <a href="https://www.tiktok.com/@rgutierrez212" target="_blank" class="social-pill tiktok">
@@ -61,9 +61,15 @@
 
         <div class="footer-column map-column">
           <h3 class="column-title">UBICACIÓN</h3>
-          <div class="mini-map">
-            <iframe src="https://www.google.com/maps/embed?pb=!3m2!1ses!2ses!4v1771707029442!5m2!1ses!2ses!6m8!1m7!1sB6Wql3oyJafs1-TFad15Tw!2m2!1d37.39605647897807!2d-6.140349771950108!3f51.43557037524417!4f2.9058759674835244!5f0.7820865974627469" width="100%" height="150" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-          </div>
+          <div class="map-container">
+            <a href="https://www.google.com/maps/search/?api=1&query=C.+San+Jose%2C+9%2C+41808+Villanueva+del+Ariscal%2C+Sevilla" target="_blank" rel="noopener">
+              <img src="../assets/mapa-ubicacion.png" alt="Ubicación R. Gutiérrez Hair Studio" class="map-image">
+              <div class="map-overlay">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Ver en Google Maps</span>
+              </div>
+            </a>
+          </div>  
         </div>
       </div>
 
@@ -370,5 +376,59 @@ export default {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.map-container {
+  position: relative;
+  width: 100%;
+  height: 150px;
+  border-radius: 12px;
+  overflow: hidden;
+  
+  transition: transform 0.3s ease;
+}
+
+.map-container:hover {
+  transform: scale(1.03);
+}
+
+.map-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Esto hace que la imagen rellene el hueco sin deformarse */
+  display: block;
+}
+
+.map-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(26, 26, 26, 0.4); /* Oscurece un poco la imagen */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: background 0.3s;
+}
+
+.map-container:hover .map-overlay {
+  background: rgba(188, 150, 103, 0.4); /* Cambia al dorado al pasar el ratón */
+}
+
+.map-overlay i {
+  font-size: 1.5rem;
+  margin-bottom: 5px;
+}
+
+.address-text {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #ccc;
+  text-align: center;
 }
 </style>

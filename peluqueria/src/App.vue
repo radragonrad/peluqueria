@@ -42,10 +42,11 @@ export default {
         const logueado = localStorage.getItem('usuarioLogueado');
         const id = localStorage.getItem('userId');
         const rol = localStorage.getItem('rol');
+        const usuario = localStorage.getItem('usuario');
 
         if (logueado === 'true' && id) {
             // Si existe, "engañamos" a la App para que sepa que ya estamos dentro
-            store.setUsuarioLogueado(true, '', id);
+            store.setUsuarioLogueado(true, '', usuario, id);
             // Si tu store guarda el rol, también lo ponemos
             if (store.state) store.state.rol = rol;
         }

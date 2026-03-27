@@ -3,6 +3,7 @@ import { reactive } from 'vue';
 const state = reactive({
   usuarioLogueado: false,
   emailUsuario: '',
+  usuario:localStorage.getItem('usuario') || '',
   userId: localStorage.getItem('userId') || null,
   servicios: [],
   peluqueros: [],
@@ -36,17 +37,20 @@ export const useStore = () => {
     state.horaSeleccionada = null;
   };
 
-  const setUsuarioLogueado = (logado, email = '', id = null) => {
+  const setUsuarioLogueado = (logado, email = '', usuario = '',id = null) => {
     state.usuarioLogueado = logado;
     state.userEmail = email;
     state.userId = id;
+    state.usuario = usuario;
+
 
     if (logado) {
       // ESTA LÍNEA ES LA QUE ESCRIBE EN EL DISCO
       localStorage.setItem('user_session', JSON.stringify({ 
         usuarioLogueado: true, 
         email: email,
-        id: id
+        id: id,
+        usuario: usuario
       }));
       
     } else {

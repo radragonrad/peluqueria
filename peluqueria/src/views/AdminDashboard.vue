@@ -51,6 +51,10 @@ import AdminReservas from '../components/admin/AdminReservas.vue';
 import AdminHorarios from '../components/admin/AdminHorarios.vue';
 import AdminDiasExcepciones from '../components/admin/AdminDiasExcepciones.vue';
 import AdminAgendar from '../components/admin/AdminAgendar.vue';
+import Analisis from '../components/admin/AnalisisView.vue';
+import Caja from '../components/admin/AdminCaja.vue';
+import Etiquetas from '../components/admin/AdminEtiquetas.vue';
+import Promociones from '../components/admin/AdminPromos.vue';
 
 const router = useRouter();
 const seccionActiva = ref('reportes');
@@ -63,7 +67,11 @@ const etiquetas = {
   reservas: 'Reservas',
   horarios: 'Horarios',
   excepciones: 'Excepciones',
-  agendar: 'Agendar'
+  agendar: 'Agendar',
+  analisis: 'Análisis',
+  caja: 'Caja',
+  etiquetas: 'Etiquetas',
+  Promociones: 'Promociones'
 };
 
 const iconos = {
@@ -74,6 +82,10 @@ const iconos = {
   horarios: 'fas fa-clock',
   excepciones: 'fas fa-calendar-times',
   agendar: 'fas fa-calendar-check',
+  analisis: 'fas fa-chart-pie',
+  caja: 'fas fa-cash-register',
+  etiquetas: 'fas fa-tags',
+  Promociones: 'fas fa-ticket-alt'
 };
 
 const componentes = {
@@ -83,7 +95,11 @@ const componentes = {
   reservas: AdminReservas,
   horarios: AdminHorarios,
   excepciones: AdminDiasExcepciones,
-  agendar: AdminAgendar
+  agendar: AdminAgendar,
+  analisis: Analisis,
+  caja: Caja,
+  etiquetas: Etiquetas,
+  Promociones: Promociones
 };
 
 const componenteActual = computed(() => componentes[seccionActiva.value]);
@@ -182,7 +198,7 @@ const logout = () => {
 /* --- CONTENIDO PRINCIPAL --- */
 .main-content {
   flex: 1;
-  padding: 30px;
+  padding: 5px;
   overflow-y: auto;
   background: #f8f9fa;
 }
@@ -241,5 +257,38 @@ const logout = () => {
   .content-header h1 {
     font-size: 1.5rem;
   }
+}
+
+.tag-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-edit-tag {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-edit-tag:hover {
+  color: #3498db;
+}
+
+.btn-cancel-edit {
+  width: 100%;
+  margin-top: 8px;
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-cancel-edit:hover {
+  background: #e2e8f0;
 }
 </style>

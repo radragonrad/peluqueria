@@ -10,14 +10,19 @@
           type="text" 
           v-model="nombre" 
           placeholder="Nombre completo" 
+          autocomplete="name"
           required 
           class="input-field"
           style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #333; background: #1a1a1a; color: white; border-radius: 8px;"
         />
+        <p v-if="nombre.length > 0 && !esNombreReal(nombre)" style="color: #ff9800; font-size: 0.7rem; margin-top: -0.8rem; margin-bottom: 1rem;">
+          Introduce nombre y apellido real (ej: Juan Pérez)
+        </p>
         <input 
           type="tel" 
           v-model="telefono" 
           placeholder="Teléfono (ej: 600123456)" 
+          autocomplete="tel"
           required 
           class="input-field"
           style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #333; background: #1a1a1a; color: white; border-radius: 8px;"
@@ -26,6 +31,7 @@
         <input 
           type="date" 
           v-model="fechaNacimiento" 
+          autocomplete="fecha"
           required 
           class="input-field"
           style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #333; background: #1a1a1a; color: white; border-radius: 8px;"
@@ -36,6 +42,7 @@
         type="email" 
         v-model="email" 
         placeholder="Correo electrónico" 
+        autocomplete="email"
         required 
         class="input-field"
         style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #333; background: #1a1a1a; color: white; border-radius: 8px;"
@@ -44,6 +51,7 @@
         type="password" 
         v-model="password" 
         placeholder="Contraseña" 
+        autocomplete="pas"
         required 
         class="input-field"
         style="width: 100%; padding: 0.75rem; border: 1px solid #333; background: #1a1a1a; color: white; border-radius: 8px;"
@@ -116,16 +124,80 @@ export default {
       error.value = '';
     };
 
+    // Lista de palabras prohibidas (puedes ampliarla)
+    const NOMBRES_PROHIBIDOS = [
+      // --- Personajes y Ficción ---
+      'goku', 'vegeta', 'frieza', 'piccolo', 'gohan', 'naruto', 'sasuke',
+      'batman', 'superman', 'spiderman', 'ironman', 'thor', 'popeye',
+      'mickey', 'donald', 'messi', 'ronaldo', 'shrek', 'simpson',
+
+      // --- Patrones de Teclado (Mamporreo) ---
+      'asdasd', 'asdfgh', 'asdfasdf', 'qwer', 'qwerty', 'zxcv', 'bnm', 
+      '1234', '123456', 'aaaa', 'bbbb', 'cccc', 'asdfghjkl', 'yuiop',
+
+      // --- Términos de Sistema / Genéricos ---
+      'admin', 'administrator', 'root', 'soporte', 'support', 'test', 
+      'prueba', 'tester', 'invitado', 'guest', 'user', 'usuario', 
+      'cliente', 'null', 'undefined', 'nan', 'error', 'password',
+
+      // --- Palabras de relleno / Basura ---
+      'nombre', 'apellido', 'nadie', 'ninguno', 'yo', 'soy', 'hola', 
+      'dfgh', 'jklm', 'xcvb', 'cvbn', 'ghjk'
+    ];
+
+    const esNombreReal = (val) => {
+      const nombreMinus = val.toLowerCase().trim();
+      
+      // 1. Longitud mínima (Nombre + Apellido real suelen ser +8 caracteres)
+      if (nombreMinus.length < 8) return false;
+
+      // 2. Solo letras y espacios
+      const regexLetras = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
+      if (!regexLetras.test(nombreMinus)) return false;
+
+      // 3. Mínimo 2 palabras, y cada una de al menos 3 letras
+      // Esto evita "A b asdfgh"
+      const palabras = nombreMinus.split(/\s+/).filter(p => p.length >= 3);
+      if (palabras.length < 2) return false;
+
+      // --- VALIDACIONES DE "HUMANIDAD" ---
+
+      // 4. BLOQUEO DE CONSONANTES SEGUIDAS (El fin de 'asdf')
+      // Es muy raro ver 4 consonantes juntas en español (ej: "adsf", "sdfg")
+      // Esta regex busca 4 consonantes seguidas.
+      const regexConsonantes = /[^aeiouáéíóúü\s]{4,}/;
+      if (regexConsonantes.test(nombreMinus)) return false;
+
+      // 5. BLOQUEO DE REPETICIONES DE TECLADO
+      // Evita "asdasd", "qwerty", "zxcv"
+      const basuraTeclado = ['asdasd', 'asdf', 'sdfg', 'jkl', 'qwerty', 'zxcv', 'bnm'];
+      if (basuraTeclado.some(b => nombreMinus.includes(b))) return false;
+
+      // 6. BLOQUEO DE LETRAS REPETIDAS (Evita 'aaaaa')
+      if (/(.)\1\1/.test(nombreMinus)) return false;
+
+      // 7. LISTA NEGRA DE PERSONAJES
+      const prohibidos = ['goku', 'vegeta', 'admin', 'test', 'prueba', 'ficticio', 'invitado'];
+      if (prohibidos.some(p => nombreMinus.includes(p))) return false;
+
+      return true;
+    };
+
+    const telefonoValido = computed(() => {
+      // Verifica que tenga 9 dígitos y empiece por 6, 7 o 9
+      const tel = telefono.value.trim();
+      return /^[679]\d{8}$/.test(tel);
+    });
+
     const formularioValido = computed(() => {
-      if (modo.value === 'login') {
-        return email.value.includes('@') && password.value.length > 0;
-      }
+      if (modo.value === 'login') return email.value.includes('@') && password.value.length > 0;
+      
       return (
-        nombre.value.trim().length > 2 &&
-        telefono.value.trim().length >= 9 &&
+        esNombreReal(nombre.value) && 
+        telefonoValido.value && // <--- Usamos la nueva validación
         fechaNacimiento.value !== '' &&
         email.value.includes('@') &&
-        passwordEsSegura.value // <--- Ahora depende de la seguridad
+        passwordEsSegura.value
       );
     });
 
@@ -164,8 +236,8 @@ export default {
           localStorage.setItem('userId', data.id);
           localStorage.setItem('usuarioLogueado', 'true');
           localStorage.setItem('rol', data.rol);
-          
-          store.setUsuarioLogueado(true, data.email, data.id);
+          localStorage.setItem('usuario', data.usuario);
+          store.setUsuarioLogueado(true, data.email, data.usuario, data.id);
 
           router.push(data.rol === 'admin' ? '/admin' : '/servicios');
         } else {
@@ -197,6 +269,13 @@ export default {
     });
 
   const registrarse = async () => {
+
+    // Validación extra antes de enviar al servidor
+    if (!esNombreReal(nombre.value)) {
+      error.value = 'Por favor, introduce un nombre y apellido real (sin números ni personajes ficticios).';
+      return;
+    }
+
     cargando.value = true;
     error.value = '';
     successMessage.value = ''; // Limpiamos mensajes previos
@@ -251,7 +330,7 @@ export default {
       modo, email, password, nombre, telefono, fechaNacimiento,
       successMessage,
       cargando, error,
-      cambiarModo, iniciarSesion, registrarse, formularioValido, passwordCriteria
+      cambiarModo, iniciarSesion, registrarse, formularioValido, passwordCriteria, esNombreReal
     };
   }
 };

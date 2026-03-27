@@ -13,7 +13,7 @@ const savedSession = localStorage.getItem('user_session');
 if (savedSession) {
   const session = JSON.parse(savedSession);
   // Restauramos los valores en el store
-  store.setUsuarioLogueado(session.usuarioLogueado, session.email);
+  store.setUsuarioLogueado(session.usuarioLogueado, session.email, session.usuario);
 }
 
 // Plugin para scroll suave

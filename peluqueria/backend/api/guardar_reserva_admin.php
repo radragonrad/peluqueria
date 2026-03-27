@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../../../private/config/db.php';
+// Carga la librería de Google desde la raíz del proyecto
+require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once 'admin_check.php';
 
 try {
@@ -20,17 +22,17 @@ try {
         $serv = $stmtS->fetch(PDO::FETCH_ASSOC);
 
         // 2. Insertamos la reserva (Estado COMPLETADA o CONFIRMADA según prefieras)
-        $sql = "INSERT INTO reservas (usuario_id, servicio_id, fecha, hora, precio, duracion, estado, notas) 
-                VALUES (?, ?, ?, ?, ?, ?, 'PENDIENTE', 'Cita agendada por Admin')";
+        $sql = "INSERT INTO reservas (user_id, servicio_id, peluquero_id, fecha, hora, created_at, estado) 
+                VALUES (?, ?, ?, ?, ?, ?, 'PENDIENTE')";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             $data['cliente_id'],
             $data['servicio_id'],
+            $data['peluquero_id'],
             $data['fecha'],
             $data['hora'],
-            $serv['precio'],
-            $serv['duracion_min']
+            date('Y-m-d H:i:s')           
         ]);
 
         echo json_encode([

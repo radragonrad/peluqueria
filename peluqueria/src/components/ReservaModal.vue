@@ -4,7 +4,7 @@
       <div class="modal-main">
         <div class="modal-header">
           <div class="header-nav">
-            <button @click="paso = 1" class="btn-atras" v-if="paso > 1">← Atrás</button>
+            <button @click="volverAtras" class="btn-atras" v-if="paso > 1">← Atrás</button>
             <div v-else></div> <button @click="cerrar" class="btn-close">×</button>
           </div>
           <h2 class="header-title">
@@ -20,7 +20,7 @@
             @click="seleccionarPeluquero(peluquero)"
           >
             <div class="agent-img">
-              <img :src="`/assets/peluqueros/${peluquero.avatar}`" :alt="peluquero.nombre">
+              <img :src="`/uploads/avatares/${peluquero.avatar}`" :alt="peluquero.nombre">
             </div>
             <div class="agent-info">
               <span>{{ peluquero.nombre }}</span>
@@ -95,7 +95,7 @@
           <div class="summary-content">
             <h4 class="service-name">{{ store.state.servicioSeleccionado?.nombre }}</h4>
                         
-            <div class="summary-card">
+            <div class="summary-card" v-if="peluqueroSeleccionado">
               <div class="summary-item" v-if="peluqueroSeleccionado">
                 <i class="fas fa-user-tie"></i>
                 <div class="item-text">
@@ -147,9 +147,13 @@
               v-if="paso === 2 && horaSeleccionada" 
               class="btn-confirmar"
               @click="confirmarReserva"
+              :disabled="enviandoReserva" 
+              :class="{ 'is-loading': enviandoReserva }"
             >
-              <span>Confirmar Reserva</span>
-              <i class="fas fa-chevron-right"></i>
+              <span v-if="!enviandoReserva">Confirmar Reserva</span>
+              <span v-else>Procesando...</span>
+              <i v-if="!enviandoReserva" class="fas fa-chevron-right"></i>
+              <i v-else class="fas fa-spinner fa-spin"></i> <!-- Icono de carga -->
             </button>
             <p v-else class="hint-text">Complete los datos para confirmar</p>
           </div>
@@ -170,6 +174,7 @@ const store = useStore();
 const paso = ref(1);
 const loading = ref(true);
 const peluqueroSeleccionado = ref(null);
+const enviandoReserva = ref(false); // Nuevo estado para controlar el botón
 
 // Estado del Calendario
 const hoy = new Date();
@@ -196,6 +201,14 @@ const cargarExcepciones = async () => {
   } catch (error) {
     console.error("Error cargando excepciones:", error);
   }
+};
+
+const volverAtras = () => {
+  paso.value = 1;
+  peluqueroSeleccionado.value = null; // Limpia el peluquero
+  diaSeleccionado.value = null;      // Limpia el día
+  horaSeleccionada.value = null;     // Limpia la hora
+  horariosDisponibles.value = [];    // Limpia la lista de horas
 };
 
 // 1. Detección de Horario Especial (AMARILLO)
@@ -355,7 +368,9 @@ const cerrar = () => {
 };
 
 const confirmarReserva = async () => {
-  
+  // 1. Evitar ejecuciones si ya se está enviando
+  if (enviandoReserva.value) return;
+
   const userId = store.state.userId || localStorage.getItem('userId');
 
   if (!userId) {
@@ -365,14 +380,13 @@ const confirmarReserva = async () => {
     router.push('/login');
     return;
   }
+
+  // Activar bloqueo
+  enviandoReserva.value = true;
+
   const horaLimpia = horaSeleccionada.value.split(' ')[0] + ':00';
-  
   const mes = String(mesActual.value + 1).padStart(2, '0');
-  
-  // 2. Preparamos el día con dos dígitos
   const dia = String(diaSeleccionado.value).padStart(2, '0');
-  
-  // 3. Construimos la fecha final YYYY-MM-DD
   const fechaFormateada = `${anioActual.value}-${mes}-${dia}`;
   
   try {
@@ -380,10 +394,10 @@ const confirmarReserva = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        user_id: store.state.userId,
+        user_id: userId, // Usamos la variable local validada
         servicio_id: store.state.servicioSeleccionado.id,
         peluquero_id: peluqueroSeleccionado.value.id,        
-        fecha: fechaFormateada, // Formato YYYY-MM-DD
+        fecha: fechaFormateada,
         hora: horaLimpia
       })
     });
@@ -393,13 +407,8 @@ const confirmarReserva = async () => {
     if (data.success) {
       alert("¡Reserva realizada! Te esperamos.");
       cerrar();
-      // Opcional: Redirigir a una página de "Mis Citas"
     } else {
-      // AQUÍ ESTABA EL ERROR:
-      // Solo mostramos el error sin echar al usuario
       alert("No se pudo realizar la reserva: " + data.message);
-      
-      // Si el error es específicamente de sesión caducada (puedes verificar data.code si tu PHP lo envía)
       if (data.message.includes("sesión") || data.message.includes("auth")) {
           store.cerrarSesionLimpiar();
           cerrar();
@@ -409,6 +418,9 @@ const confirmarReserva = async () => {
   } catch (err) {
     console.error("Error en la petición:", err);
     alert("No se pudo conectar con el servidor.");
+  } finally {
+    // 2. IMPORTANTE: Liberar el botón siempre, ocurra error o éxito
+    enviandoReserva.value = false;
   }
 };
 
@@ -440,11 +452,24 @@ onMounted(async () => {
   display: flex;
   background: white;
   border-radius: 8px;
-  width: 90%; max-width: 900px;
-  min-height: 500px;
+  width: 95%; /* Un poco más ancho para aprovechar espacio */
+  max-width: 1000px;
+  max-height: 90vh; /* IMPORTANTE: Limita la altura al 90% de la pantalla */
+  overflow: hidden; /* Evita que el contenedor padre se rompa */
   color: #333;
 }
-.modal-main { flex: 2; padding: 2rem; }
+
+.modal-main { 
+  flex: 2; 
+  padding: 2rem; 
+  overflow-y: auto; /* PERMITE SCROLL aquí cuando las horas son muchas */
+}
+
+/* Ajuste opcional para la cuadrícula de horas para que se vea mejor */
+.hours-section {
+  margin-top: 2rem;
+  padding-bottom: 2rem; /* Espacio extra al final para que el scroll no corte el último botón */
+}
 .modal-sidebar { 
   flex: 1; 
   background: #fcfcfc; 
@@ -958,5 +983,22 @@ margin-bottom: 1.5rem;
   .weekdays div {
     font-size: 0.8rem;
   }
+}
+
+.btn-confirmar:disabled {
+  background: #ccc; /* Gris cuando está bloqueado */
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Opcional: animación de rotación para el icono de carga */
+.fa-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

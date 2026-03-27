@@ -5,7 +5,6 @@ while (ob_get_level()) { ob_end_clean(); }
 // Fuerza la cabecera antes de cualquier otra cosa
 header("Content-Type: text/html; charset=utf-8");
 header("X-Content-Type-Options: nosniff");
-
 require_once __DIR__ . '/../private/config/db.php';
 
 $mensaje = "";
@@ -20,7 +19,7 @@ if (isset($_GET['token'])) {
 
         if ($user) {
             if ($user['activo'] == 0) {
-                $update = $pdo->prepare("UPDATE usuarios SET activo = 1, token_activacion = NULL, fecha_activacion = now() WHERE id = ?");
+                $update = $pdo->prepare("UPDATE usuarios SET activo = 1, token_activacion = NULL, fecha_activacion = '".date("Y-m-d H:i:s")."' WHERE id = ?");
                 $update->execute([$user['id']]);
                 $mensaje = "¡Cuenta activada con éxito! Ya puedes iniciar sesión.";
                 $tipo_alerta = "success";

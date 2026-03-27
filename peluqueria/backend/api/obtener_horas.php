@@ -71,18 +71,26 @@ try {
         $intervalos = [];
         $actual = strtotime($fecha_base . ' ' . $inicio_turno);
         $cierre_turno = strtotime($fecha_base . ' ' . $fin_turno);
-        $ahora = time();
+        
+        // Creamos la referencia de "ahora" pero sumándole el margen de 5 minutos
+        // Esto hace que si son las 11:00, el límite sea 11:05, bloqueando la cita de las 11:00
+        $margen_minutos = 5;
+        $ahora_con_margen = time() + ($margen_minutos * 60);
 
         while ($actual + ($duracion_nueva * 60) <= $cierre_turno) {
             $fin_propuesto = $actual + ($duracion_nueva * 60);
             $ocupado = false;
 
-            // Validación A: No permitir horas pasadas si es hoy
-            if ($fecha_base === date('Y-m-d') && $actual <= $ahora) {
-                $ocupado = true;
+            // --- VALIDACIÓN A: Horas pasadas con margen ---
+            // Si la fecha que se consulta es HOY...
+            if ($fecha_base === date('Y-m-d')) {
+                // Si la hora que estamos evaluando es menor o igual al tiempo actual + margen
+                if ($actual <= $ahora_con_margen) {
+                    $ocupado = true;
+                }
             }
 
-            // Validación B: Colisión con reservas
+            // --- VALIDACIÓN B: Colisión con reservas ---
             if (!$ocupado) {
                 foreach ($bloqueos as $b) {
                     if ($actual < $b['fin'] && $fin_propuesto > $b['inicio']) {
@@ -92,7 +100,7 @@ try {
                 }
             }
 
-            // Validación C: Colisión con tramos de excepción (ej: descanso)
+            // --- VALIDACIÓN C: Colisión con tramos de excepción ---
             if (!$ocupado && $excepcion && $excepcion['solo_tramo'] == 1) {
                 $inicio_ex = strtotime($fecha_base . ' ' . $excepcion['h_inicio']);
                 $fin_ex = strtotime($fecha_base . ' ' . $excepcion['h_fin']);
@@ -105,7 +113,7 @@ try {
                 $intervalos[] = date('H:i', $actual);
             }
             
-            // Avanzamos según la duración para que no se solapen (o puedes poner 15/20 min)
+            // Avanzamos 20 minutos para el siguiente hueco
             $actual = strtotime("+20 minutes", $actual);
         }
         return $intervalos;

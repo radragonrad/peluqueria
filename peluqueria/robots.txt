@@ -1,0 +1,18 @@
+User-agent: *
+
+# Carpetas que NO queremos que Google rastree (Privacidad y Seguridad)
+Disallow: /private/
+Disallow: /backend/
+Disallow: /admin/
+Disallow: /addons/
+Disallow: /config/
+
+# Evitar que indexe archivos de proceso
+Disallow: /guardar_reserva_admin.php
+Disallow: /registrar_cliente_admin.php
+
+# Permitir el resto de la web
+Allow: /
+
+# Enlace al mapa del sitio (Sitemap)
+Sitemap: https://rgutierrezhairstudio.com/sitemap.php

@@ -6,7 +6,7 @@ require_once 'admin_check.php';
 try {
     // 2. Consultamos los peluqueros (puedes añadir un WHERE activo = 1 si tienes ese campo)
     // Seleccionamos id, nombre y la ruta de la foto
-    $stmt = $pdo->prepare("SELECT id, nombre, foto FROM peluqueros ORDER BY nombre ASC");
+    $stmt = $pdo->prepare("SELECT p.id, u.nombre AS nombre, p.especialidad, p.avatar FROM peluqueros p INNER JOIN usuarios u ON p.usuario_id = u.id WHERE p.activo = 1 AND u.activo = 1 ORDER BY u.nombre");
     $stmt->execute();
     $peluqueros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
