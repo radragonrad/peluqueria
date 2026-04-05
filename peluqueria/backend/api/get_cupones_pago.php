@@ -37,7 +37,9 @@ try {
                 p.tipo != 'ETIQUETA'      -- Si no es por etiqueta, se muestra a todos
                 OR p.etiqueta_id IS NULL  -- Si no tiene etiqueta asignada, se muestra a todos
                 OR ue.etiqueta_id IS NOT NULL -- Si es tipo ETIQUETA, el usuario debe tenerla
-            )";
+            )
+            AND (c.premios_canjeados IS NULL OR c.premios_canjeados = 0);
+            ";
             
            
 

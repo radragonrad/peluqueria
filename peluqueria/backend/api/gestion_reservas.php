@@ -1,20 +1,17 @@
 <?php
-// 1. Cargamos la configuración central
 require_once __DIR__ . '/../../../private/config/db.php';
 require_once __DIR__ . '/../../../vendor/autoload.php';
-// 2. Verificación de sesión de administrador
 require_once 'admin_check.php';
 
 try {
     $metodo = $_SERVER['REQUEST_METHOD'];
 
     if ($metodo === 'GET') {
-        // Obtenemos las reservas con sus etiquetas procesadas
         $sql = "SELECT 
                     r.*, 
                     u_cliente.usuario AS cliente_nombre, 
                     u_cliente.telefono AS cliente_telefono, 
-                    u_peluquero.usuario AS peluquero_nombre, 
+                    u_peluquero.nombre AS peluquero_nombre, 
                     s.nombre AS servicio_nombre, 
                     s.icono AS servicio_icono, 
                     s.precio AS precio,
@@ -60,59 +57,110 @@ try {
     if ($metodo === 'POST') {
         $data = json_decode(file_get_contents("php://input"), true);
         
-        if (isset($data['id']) && isset($data['estado'])) {
+        if (isset($data['id'], $data['estado'])) {
             $id = $data['id'];
             $estado = strtoupper($data['estado']);
-            $motivo = isset($data['motivo']) ? $data['motivo'] : null;
-            $metodo_pago = isset($data['metodo_pago']) ? $data['metodo_pago'] : null;
+            $metodo_pago = $data['metodo_pago'] ?? null;
+            $usuario_id = $data['user_id'] ?? null;
+            $promocion_id = $data['promocion_id'] ?? null;
+            $tipo_promo = $data['tipo_promo'] ?? null;
+            $revertir = isset($data['revertir_cupon']) && $data['revertir_cupon'] === true;
 
-            // Iniciamos transacción para asegurar que si falla el cupón, no se marque como pagado (o viceversa)
             $pdo->beginTransaction();
 
-            // 1. Actualización de la reserva
-            $stmt = $pdo->prepare("UPDATE reservas SET estado = ?, motivo_cancelacion = ?, metodo_pago = ? WHERE id = ?");
-            $stmt->execute([$estado, $motivo, $metodo_pago, $id]);
+            // 1. Actualizar el estado de la reserva
+            $stmt = $pdo->prepare("UPDATE reservas SET estado = ?, metodo_pago = ? WHERE id = ?");
+            $stmt->execute([$estado, $metodo_pago, $id]);
 
-            // 2. LÓGICA DE FIDELIZACIÓN (NUEVO)
-            if ($estado === 'COMPLETADA') {
-                // Obtenemos el user_id de esta reserva
-                $stmtUser = $pdo->prepare("SELECT user_id FROM reservas WHERE id = ?");
-                $stmtUser->execute([$id]);
-                $reservaData = $stmtUser->fetch();
-                $usuario_id = $reservaData['user_id'];
+            // 2. Lógica de Fidelidad
+            if ($usuario_id && $promocion_id) {
+                
+                if ($estado === 'COMPLETADA') {
+                    $log_detalle = "";
 
-                if ($usuario_id) {
-                    // Buscamos si hay una promoción de visitas activa hoy
-                    $sql_promo = "SELECT id FROM promociones 
-                                  WHERE activa = 1 AND tipo = 'VISITAS' 
-                                  AND CURDATE() BETWEEN fecha_inicio AND fecha_fin 
-                                  LIMIT 1";
-                    $stmt_promo = $pdo->query($sql_promo);
-                    $promo = $stmt_promo->fetch();
+                    if ($tipo_promo === 'ETIQUETA') {
+                        $sql = "INSERT INTO cupones_usuario (usuario_id, promocion_id, cupones_actuales, total_historico, premios_canjeados) 
+                                VALUES (?, ?, 0, 1, 1) 
+                                ON DUPLICATE KEY UPDATE 
+                                premios_canjeados = premios_canjeados + 1, 
+                                total_historico = total_historico + 1";
+                        $pdo->prepare($sql)->execute([$usuario_id, $promocion_id]);
+                        $log_detalle = "Premio de etiqueta otorgado.";
+                    } 
+                    else {
+                        // Obtener el límite de la promoción (ej. 5)
+                        $stmtP = $pdo->prepare("SELECT cupones_necesarios FROM promociones WHERE id = ?");
+                        $stmtP->execute([$promocion_id]);
+                        $necesarios = (int)$stmtP->fetchColumn();
 
-                    if ($promo) {
-                        $promo_id = $promo['id'];
-                        // Insertamos o actualizamos el contador de cupones del usuario
-                        $sql_cupen = "INSERT INTO cupones_usuario (usuario_id, promocion_id, cupones_actuales, total_historico) 
-                                      VALUES (?, ?, 1, 1) 
-                                      ON DUPLICATE KEY UPDATE 
-                                      cupones_actuales = cupones_actuales + 1,
-                                      total_historico = total_historico + 1";
-                        $stmt_sello = $pdo->prepare($sql_cupen);
-                        $stmt_sello->execute([$usuario_id, $promo_id]);
+                        /**
+                         * NUEVA LÓGICA SOLICITADA:
+                         * - Al llegar a la 6ª visita (cuando ya tiene 5 cupones):
+                         * Mantenemos cupones_actuales en 5, subimos histórico a 6 y sumamos 1 a premios.
+                         */
+                        $sql = "INSERT INTO cupones_usuario (usuario_id, promocion_id, cupones_actuales, total_historico, premios_canjeados) 
+                                VALUES (?, ?, 1, 1, 0) 
+                                ON DUPLICATE KEY UPDATE 
+                                total_historico = total_historico + 1,
+                                premios_canjeados = CASE 
+                                    WHEN cupones_actuales >= ? THEN premios_canjeados + 1 
+                                    ELSE premios_canjeados 
+                                END,
+                                cupones_actuales = CASE 
+                                    WHEN cupones_actuales >= ? THEN ? 
+                                    ELSE cupones_actuales + 1 
+                                END";
+                        
+                        // Enviamos $necesarios tres veces para cubrir las condiciones del CASE
+                        $pdo->prepare($sql)->execute([$usuario_id, $promocion_id, $necesarios, $necesarios, $necesarios]);
+                        $log_detalle = "Sello de visita añadido o premio canjeado.";
                     }
+
+                    $stmtLog = $pdo->prepare("INSERT INTO logs_promociones (reserva_id, usuario_id, promocion_id, tipo_movimiento, tipo_promo, detalles) VALUES (?, ?, ?, 'SUMA', ?, ?)");
+                    $stmtLog->execute([$id, $usuario_id, $promocion_id, $tipo_promo, $log_detalle]);
+                }
+                
+                else if ($estado === 'PENDIENTE' && $revertir) {
+                    $log_detalle = "Reversión de estado de reserva.";
+
+                    if ($tipo_promo === 'ETIQUETA') {
+                        $sql = "UPDATE cupones_usuario 
+                                SET premios_canjeados = GREATEST(0, premios_canjeados - 1),
+                                    total_historico = GREATEST(0, total_historico - 1)
+                                WHERE usuario_id = ? AND promocion_id = ?";
+                        $pdo->prepare($sql)->execute([$usuario_id, $promocion_id]);
+                    } 
+                    else {
+                        $stmtP = $pdo->prepare("SELECT cupones_necesarios FROM promociones WHERE id = ?");
+                        $stmtP->execute([$promocion_id]);
+                        $necesarios = (int)$stmtP->fetchColumn();
+
+                        $sql = "UPDATE cupones_usuario 
+                                SET premios_canjeados = CASE 
+                                        WHEN cupones_actuales = ? AND premios_canjeados > 0 THEN premios_canjeados - 1 
+                                        ELSE premios_canjeados 
+                                    END,
+                                    cupones_actuales = GREATEST(0, cupones_actuales - 1),
+                                    total_historico = GREATEST(0, total_historico - 1)
+                                WHERE usuario_id = ? AND promocion_id = ?";
+                        
+                        $pdo->prepare($sql)->execute([$necesarios, $usuario_id, $promocion_id]);
+                    }
+
+                    $stmtLog = $pdo->prepare("INSERT INTO logs_promociones (reserva_id, usuario_id, promocion_id, tipo_movimiento, tipo_promo, detalles) VALUES (?, ?, ?, 'REVERSION', ?, ?)");
+                    $stmtLog->execute([$id, $usuario_id, $promocion_id, $tipo_promo, $log_detalle]);
                 }
             }
 
             $pdo->commit();
+            ob_clean();
             echo json_encode(['status' => 'success']);
             exit;
         }
     }
-
-} catch (PDOException $e) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
-    ob_clean();
+    
+} catch (Exception $e) {
+    if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
     http_response_code(500);
     echo json_encode(["error" => $e->getMessage()]);
     exit;

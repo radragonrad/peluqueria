@@ -20,12 +20,16 @@ const cargarDatosFidelidad = async () => {
     const res = await fetch(`/backend/api/get_cupones_cliente.php?user_id=${userId}`);
     const data = await res.json();
     
-    // Adaptación por si la estructura cambia
     if (data.promociones) {
-      misPromos.value = data.promociones;
+      misPromos.value = data.promociones.map(promo => ({
+        ...promo,
+        mis_sellos: parseInt(promo.mis_sellos) || 0,
+        cupones_necesarios: parseInt(promo.cupones_necesarios) || 0,
+        premios_canjeados: parseInt(promo.premios_canjeados) || 0 
+      }));
       datosUsuario.value = data.usuario;
     } else {
-      misPromos.value = data;
+      misPromos.value = Array.isArray(data) ? data : [];
     }
     
   } catch (e) {
@@ -51,7 +55,10 @@ onMounted(cargarDatosFidelidad);
     </div>
 
     <div v-else class="tarjetas-grid">
-      <div v-for="promo in misPromos" :key="promo.id" class="tarjeta-fidelidad">
+      <div v-for="promo in misPromos" 
+           :key="promo.id" 
+           class="tarjeta-fidelidad" 
+           :class="{ 'promo-gastada': promo.premios_canjeados > 0 }">
         
         <div class="tarjeta-col-izq">
           <div class="logo-wrapper">
@@ -66,7 +73,7 @@ onMounted(cargarDatosFidelidad);
           </div>
 
           <div class="tarjeta-content">
-            <div class="sellos-wrapper" v-if="promo.tipo === 'VISITAS'" :class="{ 'tarjeta-completada': promo.mis_sellos >= promo.cupones_necesarios }">
+            <div class="sellos-wrapper" v-if="promo.tipo === 'VISITAS'">
               <div class="sellos-grid">
                 <div 
                   v-for="n in parseInt(promo.cupones_necesarios)" 
@@ -78,9 +85,16 @@ onMounted(cargarDatosFidelidad);
                 </div>
               </div>
 
-              <div class="completado-overlay" v-if="promo.mis_sellos >= promo.cupones_necesarios">
+              <div class="completado-overlay overlay-listo" 
+                  v-if="promo.mis_sellos >= promo.cupones_necesarios && promo.premios_canjeados == 0">
                 <i class="fas fa-gift"></i>
                 <span>¡PREMIO LISTO!</span>
+              </div>
+
+              <div class="completado-overlay overlay-canjeado" 
+                  v-else-if="promo.premios_canjeados > 0">
+                <i class="fas fa-check-circle"></i>
+                <span>CANJEADO</span>
               </div>
             </div>
 
@@ -95,14 +109,20 @@ onMounted(cargarDatosFidelidad);
 
               <p v-if="promo.tipo === 'ETIQUETA'" class="etiqueta-info">
                 Beneficio para: <strong>{{ promo.nombre_etiqueta }}</strong>
-              </p> 
+              </p>
+
+              <div class="completado-overlay overlay-canjeado" 
+                  v-if="promo.premios_canjeados > 0">
+                <i class="fas fa-check-circle"></i>
+                <span>CANJEADO</span>
+              </div>
             </div>
           </div>
 
           <div class="tarjeta-footer">
             <span><i class="far fa-calendar-alt"></i> {{ promo.fecha_fin }}</span>
-            <div class="progreso-texto" v-if="promo.tipo === 'VISITAS'">
-              {{ promo.mis_sellos }} / {{ promo.cupones_necesarios }}
+            <div class="progreso-texto">
+              {{ promo.premios_canjeados > 0 ? 'Utilizado' : (promo.tipo === 'VISITAS' ? `${promo.mis_sellos} / ${promo.cupones_necesarios}` : 'Disponible') }}
             </div>
           </div>
         </div>
@@ -112,12 +132,7 @@ onMounted(cargarDatosFidelidad);
 </template>
 
 <style scoped>
-.fidelidad-container { 
-  padding: 20px; 
-  max-width: 600px; 
-  margin: 0 auto;
-}
-
+.fidelidad-container { padding: 20px; max-width: 600px; margin: 0 auto; }
 .client-header { text-align: center; margin-bottom: 30px; }
 .client-header h2 { color: #2d3748; font-weight: 800; }
 
@@ -141,13 +156,10 @@ onMounted(cargarDatosFidelidad);
   align-items: center;
   justify-content: center;
   padding: 20px;
+  transition: background 0.3s ease;
 }
 
-.logo-wrapper img {
-  width: 100%;
-  height: auto;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
-}
+.logo-wrapper img { width: 100%; height: auto; }
 
 .tarjeta-col-der {
   flex: 1;
@@ -155,68 +167,105 @@ onMounted(cargarDatosFidelidad);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-width: 0; /* Evita que el contenido desborde el flex */
+  position: relative;
 }
 
-.tarjeta-info h3 { margin: 0; font-size: 1.2rem; color: #fff; }
-.tarjeta-info p { font-size: 0.85rem; color: #a0aec0; margin-bottom: 10px; }
+.tarjeta-info h3 { margin: 0; font-size: 1.2rem; }
+.tarjeta-info p { font-size: 0.85rem; color: #a0aec0; }
 
-/* SELLOS EN HORIZONTAL */
-.sellos-grid {
-  display: flex;
-  flex-wrap: wrap; /* Para que bajen si son muchos */
-  gap: 8px;
-  justify-content: flex-start;
-}
+.sellos-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .sello-slot {
-  width: 35px;
-  height: 35px;
+  width: 35px; height: 35px;
   border: 2px dashed #4a5568;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #4a5568;
-  font-size: 0.9rem;
+  display: flex; align-items: center; justify-content: center;
 }
 
-.sello-active {
-  background: white;
-  border: none;
-  color: #e75480;
-  transform: scale(1.05);
-}
+.sello-active { background: white; border: none; color: #e75480; }
 
-/* COMPLETADO OVERLAY */
-.tarjeta-completada .sellos-grid { opacity: 0.1; }
+/* OVERLAYS */
 .completado-overlay {
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(231, 84, 128, 0.9);
-  display: flex;
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%;
+  display: flex; 
   flex-direction: column;
-  align-items: center;
+  align-items: center; 
   justify-content: center;
-  z-index: 2;
-  border-radius: 0 20px 20px 0;
+  z-index: 10;
+  /* Importante: que coincida con el borde de la tarjeta derecha */
+  border-radius: 0 20px 20px 0; 
 }
-.completado-overlay i { font-size: 2rem; margin-bottom: 5px; }
 
-/* OTROS ESTILOS */
-.promo-valor { font-size: 2.2rem; font-weight: 900; color: #e75480; }
-.promo-valor span { font-size: 0.9rem; color: #a0aec0; }
-.etiqueta-info { font-size: 0.8rem; margin-top: 5px; }
+/* Estado: Premio ganado pero no usado */
+.overlay-listo {
+  /* Fondo rosa muy sutil (0.35 de opacidad) */
+  background: rgba(231, 84, 128, 0.35) !important; 
+  color: white;
+  
+  /* Efecto de cristal esmerilado potente */
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
+  
+  /* Un borde sutil para definir el área */
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Forzamos a que los sellos y el contenido de abajo se vean casi al 100% */
+.tarjeta-fidelidad.promo-lista .tarjeta-content {
+  opacity: 1;
+}
+
+/* Mejoramos el texto para que resalte sobre el fondo transparente */
+.overlay-listo i {
+  font-size: 3rem;
+  margin-bottom: 10px;
+  /* Sombra para que el icono "flote" */
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+}
+
+.overlay-listo span {
+  font-size: 1.2rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  /* Sombra de texto negra para asegurar legibilidad sobre los sellos */
+  text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.8); 
+}
+
+/* Estado: Canjeado (Casi transparente con check verde) */
+.overlay-canjeado {
+  background: rgba(26, 32, 44, 0.6) !important;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  color: #2ecc71;
+}
+
+/* Estado: Premio ya gastado (como el VIP) */
+.overlay-canjeado {
+  background: rgba(26, 32, 44, 0.9);
+  color: #2ecc71; /* Verde éxito */
+}
+
+.completado-overlay i { font-size: 2.5rem; margin-bottom: 8px; }
+.completado-overlay span { font-weight: 900; letter-spacing: 1px; }
+
+/* Estilo para tarjeta gastada */
+.promo-gastada { opacity: 0.85; }
+.promo-gastada .tarjeta-col-izq { background: #4a5568; }
 
 .tarjeta-footer {
-  margin-top: 15px;
-  padding-top: 10px;
+  margin-top: 15px; padding-top: 10px;
   border-top: 1px solid rgba(255,255,255,0.1);
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.7rem;
-  color: #718096;
+  display: flex; justify-content: space-between;
+  font-size: 0.75rem; color: #718096;
 }
+
+.promo-valor { font-size: 2.2rem; font-weight: 900; color: #e75480; }
+.etiqueta-info { font-size: 0.8rem; margin-top: 5px; }
 
 .loader-container { text-align: center; padding: 50px; }
 .spinner {
@@ -225,5 +274,5 @@ onMounted(cargarDatosFidelidad);
   border-radius: 50%; animation: spin 1s linear infinite;
   margin: 0 auto;
 }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes spin { 100% { transform: rotate(360deg); } }
 </style>

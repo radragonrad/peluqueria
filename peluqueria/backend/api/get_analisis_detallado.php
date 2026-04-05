@@ -2,114 +2,144 @@
 require_once __DIR__ . '/../../../private/config/db.php'; 
 require_once 'admin_check.php';
 
-// Configurar idioma para fechas (opcional según el servidor)
-setlocale(LC_TIME, 'es_ES.UTF-8', 'spanish');
-
-$inicio = $_GET['inicio'];
-$fin = $_GET['fin'];
+$fecha_inicio = $_GET['inicio'];
+$fecha_fin = $_GET['fin'];
+$intervalo_tramo = 30; // Minutos por tramo de la rejilla
 
 try {
-    // 1. Obtener conteos diferenciados por estado
-    // Usamos LIKE 'ANULADA%' para capturar 'ANULADA' y 'ANULADA WEB'
-    $stmt = $pdo->prepare("
-        SELECT 
-            fecha, 
-            SUM(CASE WHEN estado IN ('PENDIENTE', 'COMPLETADA') THEN 1 ELSE 0 END) as validas,
-            SUM(CASE WHEN estado LIKE 'ANULADA%' THEN 1 ELSE 0 END) as anuladas
-        FROM reservas 
-        WHERE fecha BETWEEN ? AND ? 
-        GROUP BY fecha
-    ");
-    $stmt->execute([$inicio, $fin]);
-    $datosDB = $stmt->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
+    // 1. CARGAR MAPA DE HORARIOS (Turnos partidos de la peluquería)
+    $queryH = "SELECT * FROM horarios";
+    $resH = $pdo->query($queryH)->fetchAll(PDO::FETCH_ASSOC);
+    $horarios_semana = [];
+    foreach ($resH as $h) {
+        // Guardamos por nombre inglés (Monday, Tuesday...) para DateTime
+        $key = traducirDiaIngles($h['dia_semana']);
+        $horarios_semana[$key] = $h;
+    }
 
+    // 2. OBTENER CITAS CON DURACIÓN (Hacemos JOIN con servicios)
+    $queryC = "SELECT r.fecha, r.hora, s.duracion_min 
+               FROM reservas r
+               JOIN servicios s ON r.servicio_id = s.id
+               WHERE r.fecha BETWEEN ? AND ? 
+               AND r.estado != 'ANULADA'
+               ORDER BY r.fecha ASC, r.hora ASC";
+    
+    $stmtC = $pdo->prepare($queryC);
+    $stmtC->execute([$fecha_inicio, $fecha_fin]);
+    
+    // Organizamos las reservas en un mapa detallado [fecha][] = [inicio, fin]
+    $mapa_reservas_detallado = [];
+    while ($row = $stmtC->fetch(PDO::FETCH_ASSOC)) {
+        $f = $row['fecha'];
+        
+        // Calculamos hora exacta de inicio y fin en formato DateTime para comparar fácil
+        $inicio_cita = new DateTime($f . ' ' . $row['hora']);
+        $fin_cita = clone $inicio_cita;
+        $fin_cita->modify('+' . $row['duracion_min'] . ' minutes');
+
+        $mapa_reservas_detallado[$f][] = [
+            'inicio' => $inicio_cita,
+            'fin' => $fin_cita,
+            'duracion' => $row['duracion_min']
+        ];
+    }
+
+    // 3. GENERAR REJILLA CON LÓGICA DE BLOQUEO POR DURACIÓN
     $resultado = [];
-    $current = new DateTime($inicio);
-    $end = new DateTime($fin);
-    $end->modify('+1 day'); 
+    $fecha_actual = new DateTime($fecha_inicio);
+    $fecha_limite = new DateTime($fecha_fin);
+    $semana_index = 1;
+    $dias_acumulados = [];
 
-    while ($current < $end) {
-        $fechaKey = $current->format('Y-m-d');
+    while ($fecha_actual <= $fecha_limite) {
+        $f_str = $fecha_actual->format('Y-m-d');
+        $dia_ing = $fecha_actual->format('l'); // 'Monday', 'Tuesday'...
+        $h_dia = $horarios_semana[$dia_ing] ?? null;
         
-        $v = isset($datosDB[$fechaKey]) ? (int)$datosDB[$fechaKey]['validas'] : 0;
-        $a = isset($datosDB[$fechaKey]) ? (int)$datosDB[$fechaKey]['anuladas'] : 0;
+        $tramos = [];
         
-        $hPico = null;
-        $hValle = null;
+        // Si el día está abierto, generamos los tramos oficiales
+        if ($h_dia && $h_dia['abierto'] == 1) {
+            
+            // Función interna para generar tramos CORREGIDA con lógica de BLOQUEO
+            $generarTramosBloqueados = function($inicio_turno, $fin_turno, $fecha, $mapa_detallado, $intervalo) {
+                if (!$inicio_turno || !$fin_turno) return [];
+                $t = [];
+                
+                $curr_tramo_inicio = new DateTime($fecha . ' ' . $inicio_turno);
+                $end_turno  = new DateTime($fecha . ' ' . $fin_turno);
+                
+                while ($curr_tramo_inicio < $end_turno) {
+                    $inicio_t = clone $curr_tramo_inicio;
+                    $fin_t    = clone $curr_tramo_inicio;
+                    $fin_t->modify("+$intervalo minutes");
 
-        // Horas pico/valle por día (Solo si hay citas válidas)
-        if ($v > 0) {
-            // Hora Pico del día
-            $stmtH = $pdo->prepare("SELECT hora FROM reservas WHERE fecha = ? AND estado NOT LIKE 'ANULADA%' GROUP BY hora ORDER BY COUNT(*) DESC, hora ASC LIMIT 1");
-            $stmtH->execute([$fechaKey]);
-            $res = $stmtH->fetch();
-            $hPico = $res ? substr($res['hora'], 0, 5) : null;
+                    $cantidad_citas = 0; // Cambiamos el booleano por un contador
+                    if (isset($mapa_detallado[$fecha])) {
+                        foreach ($mapa_detallado[$fecha] as $cita) {
+                            // Si la cita se solapa con el tramo, sumamos 1
+                            if ($cita['inicio'] < $fin_t && $cita['fin'] > $inicio_t) {
+                                $cantidad_citas++;
+                            }
+                        }
+                    }
 
-            // Hora Valle del día
-            $stmtH = $pdo->prepare("SELECT hora FROM reservas WHERE fecha = ? AND estado NOT LIKE 'ANULADA%' GROUP BY hora ORDER BY COUNT(*) ASC, hora ASC LIMIT 1");
-            $stmtH->execute([$fechaKey]);
-            $res = $stmtH->fetch();
-            $hValle = $res ? substr($res['hora'], 0, 5) : null;
+                    $t[] = [
+                        'hora' => $inicio_t->format('H:i'),
+                        'ocupado' => $cantidad_citas > 0, // Mantenemos esto para el color
+                        'cantidad' => $cantidad_citas    // Enviamos el número real
+                    ];
+                    
+                    $curr_tramo_inicio->modify("+$intervalo minutes");
+                }
+                return $t;
+            };
+
+            // Tramo Mañana
+            $tramos_m = $generarTramosBloqueados($h_dia['h_apertura_1'], $h_dia['h_cierre_1'], $f_str, $mapa_reservas_detallado, $intervalo_tramo);
+            // Tramo Tarde
+            $tramos_t = $generarTramosBloqueados($h_dia['h_apertura_2'], $h_dia['h_cierre_2'], $f_str, $mapa_reservas_detallado, $intervalo_tramo);
+            
+            $tramos = array_merge($tramos_m, $tramos_t);
         }
 
-        $diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-        $resultado[] = [
-            "fecha" => $fechaKey,
-            "soloFecha" => $current->format('d M'),
-            "nombreDia" => $diasSemana[$current->format('w')],
-            "cantidad" => $v,
-            "anuladas" => $a,
-            "horaPico" => $hPico,
-            "horaValle" => $hValle
+        $dias_acumulados[] = [
+            'fecha' => $f_str,
+            'fecha_f' => $fecha_actual->format('d M'),
+            'dia_nombre' => traducirDiaEspanol($fecha_actual->format('D')),
+            'abierto' => $h_dia ? (int)$h_dia['abierto'] : 0,
+            // Contamos citas reales, no tramos bloqueados
+            'total_citas' => isset($mapa_reservas_detallado[$f_str]) ? count($mapa_reservas_detallado[$f_str]) : 0,
+            'tramos' => $tramos
         ];
 
-        $current->modify('+1 day');
+        // Agrupar en semanas de 7 días
+        if (count($dias_acumulados) == 7 || $fecha_actual == $fecha_limite) {
+            $resultado[] = [
+                'titulo' => "SEMANA $semana_index",
+                'dias' => $dias_acumulados
+            ];
+            $dias_acumulados = [];
+            $semana_index++;
+        }
+        $fecha_actual->modify('+1 day');
     }
 
-    // --- CÁLCULOS DE RESUMEN GLOBAL (KPIs) ---
-    $maxV = -1; 
-    $minV = 999; 
-    $diaP = '---'; 
-    $diaV = '---';
+    echo json_encode($resultado);
 
-    foreach ($resultado as $r) {
-        // Día Pico
-        if ($r['cantidad'] > $maxV) {
-            $maxV = $r['cantidad'];
-            $diaP = $r['nombreDia'] . ' ' . $r['soloFecha'];
-        }
-        // Día Valle (mínimo que tenga al menos 1 cita)
-        if ($r['cantidad'] > 0 && $r['cantidad'] < $minV) {
-            $minV = $r['cantidad'];
-            $diaV = $r['nombreDia'] . ' ' . $r['soloFecha'];
-        }
-    }
-
-    // Limpieza de etiquetas si no hay datos suficientes
-    if ($minV == 999) $diaV = '---';
-    if ($diaP === $diaV && $maxV > 0) $diaV = "Mismo que pico";
-
-    // HORA PUESTA GENERAL (En todo el rango)
-    $stmtG = $pdo->prepare("SELECT hora FROM reservas WHERE fecha BETWEEN ? AND ? AND estado NOT LIKE 'ANULADA%' GROUP BY hora ORDER BY COUNT(*) DESC, hora ASC LIMIT 1");
-    $stmtG->execute([$inicio, $fin]);
-    $gPico = $stmtG->fetch();
-
-    $stmtG = $pdo->prepare("SELECT hora FROM reservas WHERE fecha BETWEEN ? AND ? AND estado NOT LIKE 'ANULADA%' GROUP BY hora ORDER BY COUNT(*) ASC, hora ASC LIMIT 1");
-    $stmtG->execute([$inicio, $fin]);
-    $gValle = $stmtG->fetch();
-
-    header('Content-Type: application/json');
-    echo json_encode([
-        "porDias" => $resultado,
-        "resumen" => [
-            "diaPico" => $diaP,
-            "diaValle" => $diaV,
-            "horaPicoGral" => $gPico ? substr($gPico['hora'], 0, 5) : '---',
-            "horaValleGral" => $gValle ? substr($gValle['hora'], 0, 5) : '---'
-        ]
-    ]);
-
-} catch (PDOException $e) {
+} catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(["error" => $e->getMessage()]);
+    echo json_encode(['error' => $e->getMessage()]);
+}
+
+// FUNCIONES DE TRADUCCIÓN
+function traducirDiaIngles($es) {
+    $dict = ['Lunes'=>'Monday','Martes'=>'Tuesday','Miércoles'=>'Wednesday','Jueves'=>'Thursday','Viernes'=>'Friday','Sábado'=>'Saturday','Domingo'=>'Sunday'];
+    return $dict[$es] ?? $es;
+}
+
+function traducirDiaEspanol($en) {
+    $dict = ['Mon'=>'Lun','Tue'=>'Mar','Wed'=>'Mié','Thu'=>'Jue','Fri'=>'Vie','Sat'=>'Sáb','Sun'=>'Dom'];
+    return $dict[$en] ?? $en;
 }

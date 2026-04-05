@@ -13,15 +13,21 @@
       </div>
       
       <nav class="sidebar-menu">
-        <button 
-          v-for="(comp, key) in etiquetas" 
-          :key="key"
-          @click="cambiarSeccion(key)" 
-          :class="{ active: seccionActiva === key }"
-        >
-          <i :class="iconos[key]"></i>
-          {{ comp }}
-        </button>
+        
+        <template v-for="(comp, key) in etiquetas" :key="key">
+          
+          <button 
+            @click="cambiarSeccion(key)" 
+            :class="{ active: seccionActiva === key }"
+          >
+            <i :class="iconos[key]"></i>
+            {{ comp }}
+          </button>
+
+          
+          <div v-if="key === 'caja'" class="menu-divider"></div>
+          
+        </template>
       </nav>
 
       <div class="sidebar-footer">
@@ -32,11 +38,8 @@
       </div>
     </aside>
 
-    <main class="main-content">
-      <div class="content-header">
-        <h1>{{ etiquetas[seccionActiva] }}</h1>
-      </div>
-      <component :is="componenteActual" />
+    <main class="main-content">      
+      <component :is="componenteActual" @cambiar-seccion="seccionActiva = $event"/>
     </main>
   </div>
 </template>
@@ -62,14 +65,14 @@ const menuAbierto = ref(false);
 
 const etiquetas = {
   reportes: 'Reportes',
-  usuarios: 'Usuarios',
-  servicios: 'Servicios',
   reservas: 'Reservas',
-  horarios: 'Horarios',
-  excepciones: 'Excepciones',
   agendar: 'Agendar',
   analisis: 'Análisis',
   caja: 'Caja',
+  usuarios: 'Usuarios',
+  servicios: 'Servicios',
+  horarios: 'Horarios',
+  excepciones: 'Excepciones',
   etiquetas: 'Etiquetas',
   Promociones: 'Promociones'
 };
@@ -290,5 +293,17 @@ const logout = () => {
 
 .btn-cancel-edit:hover {
   background: #e2e8f0;
+}
+.menu-divider {
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.1); /* Color suave sobre fondo negro */
+  margin: 15px 20px; /* Espaciado arriba/abajo y a los lados */
+  border: none;
+}
+
+/* Si el contenedor .sidebar-menu tiene flex-direction: column, esto lo mantendrá alineado */
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
 }
 </style>

@@ -129,7 +129,7 @@
         </thead>
         <tbody>
           <tr v-for="u in usuariosPaginados" :key="u.id" :class="{ 'servicio-desactivado': u.activo == 0 }">
-            <td data-label="ID">#{{ u.id }}</td>
+            <td data-label="ID" class="id-cell">#{{ u.id }}</td>
             <td data-label="Usuario">
               <div class="service-info-cell">
                 <div class="icon-wrapper">
@@ -600,5 +600,59 @@ input:checked + .slider:before { transform: translateX(20px); }
   .form-grid, .form-grid-inner {
     grid-template-columns: 1fr;
   }
+}
+
+.id-cell {
+  font-family: 'Monaco', 'Consolas', monospace; /* Fuente tipo código */
+  color: #94a3b8; /* Gris suave para que no distraiga */
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #f8fafc; /* Un fondo muy sutil */
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* 2. Contenedor de Contacto (Email + Teléfono) */
+.contact-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px; /* Espacio entre email y teléfono */
+}
+
+/* Estilo para el Email */
+.email-text {
+  font-size: 0.9rem;
+  color: #1e293b; /* Azul muy oscuro para legibilidad máxima */
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.email-text i {
+  color: #e75480; /* El rosa de tu marca para el icono */
+  font-size: 0.85rem;
+  width: 16px; /* Ancho fijo para que los textos se alineen */
+}
+
+/* 3. Estilo para el Número de Teléfono */
+.phone-text {
+  font-size: 0.8rem;
+  color: #64748b; /* Gris intermedio */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phone-text i {
+  color: #94a3b8; /* Icono más discreto que el del email */
+  font-size: 0.8rem;
+  width: 16px;
+}
+
+/* Efecto Hover para la fila (opcional) */
+tr:hover .email-text {
+  color: #e75480; /* El email se ilumina al pasar el ratón */
+  transition: color 0.2s ease;
 }
 </style>

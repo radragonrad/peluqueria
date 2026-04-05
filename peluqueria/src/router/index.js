@@ -14,6 +14,7 @@ import Cookies from '../views/Cookies.vue'; // 2. Crea esta vista
 import promociones from '../views/ClienteFidelidad.vue'; // 2. Crea esta vista
 
 
+
 // Otros componentes
 import ContactoView from '../components/ContactoSection.vue'
 import GaleriaView from '../components/GaleriaSection.vue'
