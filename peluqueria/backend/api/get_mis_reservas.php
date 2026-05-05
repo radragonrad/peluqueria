@@ -12,19 +12,24 @@ try {
         echo json_encode([]); exit;
     }
 
+    // Definimos la fecha límite (hace 21 días)
+    $fecha_limite = date('Y-m-d', strtotime('-21 days'));
+
     // Consultamos las reservas uniendo con servicios y peluqueros
-    $sql = "SELECT r.id, r.fecha, r.hora, s.nombre as servicio, s.precio, u.nombre as peluquero
+    $sql = "SELECT r.id, r.fecha, r.hora, r.estado, s.nombre as servicio, s.precio, u.nombre as peluquero
             FROM reservas r
             JOIN servicios s ON r.servicio_id = s.id
             JOIN peluqueros p ON r.peluquero_id = p.id
-            JOIN usuarios u ON p.usuario_id=u.id
-            WHERE r.user_id = ?
+            JOIN usuarios u ON p.usuario_id = u.id
+            WHERE r.user_id = ? 
+              -- AND r.estado = 'PENDIENTE' 
+              AND r.fecha >= ?
             ORDER BY r.fecha ASC, r.hora ASC";
             
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([$user_id]);
+    // Pasamos el user_id y la fecha calculada
+    $stmt->execute([$user_id, $fecha_limite]);
     $reservas = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
     echo json_encode($reservas);
 
 } catch (PDOException $e) {

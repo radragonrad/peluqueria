@@ -20,8 +20,11 @@
 
     <div v-else class="reservas-grid">
       <div v-for="reserva in reservas" :key="reserva.id" 
-           class="reserva-card" 
-           :class="{ 'card-pasada': esPasada(reserva.fecha, reserva.hora) }">
+          class="reserva-card" 
+          :class="{ 
+            'card-pasada': esPasada(reserva.fecha, reserva.hora) || reserva.estado === 'COMPLETADA',
+            'card-anulada': reserva.estado.includes('ANULADA') 
+          }">
         <div class="card-ticket-edge"></div>
         
         <div class="reserva-header">
@@ -47,12 +50,12 @@
         </div>
 
         <div class="reserva-footer">
-          <span class="status-indicator" :class="esPasada(reserva.fecha, reserva.hora) ? 'pasada' : 'proxima'">
-            <i class="fas" :class="esPasada(reserva.fecha, reserva.hora) ? 'fa-check-circle' : 'fa-calendar-check'"></i>
-            {{ esPasada(reserva.fecha, reserva.hora) ? 'Finalizada' : 'Confirmada' }}
+          <span class="status-indicator" :class="reserva.estado.toLowerCase().replace(' ', '-')">
+            <i class="fas" :class="getIconoEstado(reserva.estado, reserva.fecha, reserva.hora)"></i>
+            {{ getTextoEstado(reserva.estado, reserva.fecha, reserva.hora) }}
           </span>
 
-          <div v-if="!esPasada(reserva.fecha, reserva.hora)">
+          <div v-if="reserva.estado === 'PENDIENTE' && !esPasada(reserva.fecha, reserva.hora)">
             <button 
               v-if="puedeAnular(reserva.fecha, reserva.hora)" 
               @click="confirmarAnulacion(reserva)" 
@@ -123,6 +126,18 @@ const puedeAnular = (fechaStr, horaStr) => {
 const esPasada = (fechaStr, horaStr) => {
   const fechaCita = new Date(`${fechaStr}T${horaStr}`);
   return fechaCita < new Date();
+};
+
+const getTextoEstado = (estado, fecha, hora) => {
+  if (estado.includes('ANULADA')) return 'Cancelada';
+  if (estado === 'COMPLETADA' || esPasada(fecha, hora)) return 'Finalizada';
+  return 'Confirmada';
+};
+
+const getIconoEstado = (estado, fecha, hora) => {
+  if (estado.includes('ANULADA')) return 'fa-times-circle';
+  if (estado === 'COMPLETADA' || esPasada(fecha, hora)) return 'fa-check-circle';
+  return 'fa-calendar-check';
 };
 
 const cargarReservas = async () => {
@@ -472,5 +487,31 @@ h2 { color: white; letter-spacing: 2px; }
   background: rgba(255, 255, 255, 0.05);
   padding: 4px 10px;
   border-radius: 4px;
+}
+
+/* Estado Anulada */
+.anulada-web, .anulada-local {
+  color: #ef4444 !important; /* Rojo */
+}
+
+.card-anulada {
+  opacity: 0.7;
+  filter: grayscale(0.5);
+}
+
+.card-anulada .servicio-tag {
+  text-decoration: line-through;
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* Estado Pendiente / Confirmada */
+.pendiente {
+  color: #4ade80 !important; /* Verde como tu botón de finalizar */
+}
+
+/* Estado Completada */
+.completada {
+  color: #64748b !important;
 }
 </style>

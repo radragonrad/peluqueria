@@ -38,6 +38,13 @@
           <span class="value small-value">{{ reporte.stats?.estrella || '---' }}</span>
         </div>
       </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="fas fa-user-check"></i></div>
+        <div class="stat-info">
+          <span class="label">Usuarios Activos</span>
+          <span class="value">{{ reporte.stats?.usuarios_activos || 0 }}</span>
+        </div>
+      </div>
     </div>
 
     <div class="report-section main-grid">
@@ -294,6 +301,7 @@ onMounted(cargarReporte);
 }
 
 .stat-icon.yellow { background: #fffbeb; color: #f59e0b; }
+.stat-icon.purple { background: #f5f3ff; color: #7c3aed; }
 .small-value { font-size: 1.2rem !important; text-transform: uppercase; }
 
 .ranking-list { display: flex; flex-direction: column; gap: 15px; }

@@ -70,10 +70,14 @@
             <td>
               <div class="user-info">
                 <div class="avatar-mini">{{ r.cliente_nombre.charAt(0) }}</div>
+
                 <div>
                   <div class="font-bold">{{ r.cliente_nombre }}</div>
                   <div class="text-muted small">{{ r.cliente_telefono }}</div>
                 </div>
+                                <span v-if="tieneDeudaPendiente(r.user_id)" class="badge-deuda">
+                  DEUDA PENDIENTE
+                </span>
               </div>
             </td>
             <td>
@@ -119,6 +123,11 @@
                 </button>
               </div>
               <i v-else class="fas fa-lock muted-icon"></i>
+              <button v-if="r.metodo_pago === 'deuda' && !r.pagado_deuda" 
+                    @click="abrirModalCobroDeuda(r)" 
+                    class="btn-cobrar">
+              Cobrar Deuda
+            </button>
             </td>
           </tr>
         </tbody>
@@ -414,6 +423,20 @@ const esFechaBloqueada = (f) => new Date(f) < new Date().setDate(new Date().getD
 const formatearFecha = (f) => new Date(f).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
 const obtenerIconoPago = (m) => metodosPago.find(p => p.id === m)?.icono || 'fas fa-money-bill';
 
+// Función para detectar deudas de este cliente en el listado cargado
+const tieneDeudaPendiente = (userId) => {
+  return reservas.value.some(r => 
+    r.user_id === userId && 
+    r.metodo_pago === 'deuda' && 
+    r.pagado_deuda == 0
+  );
+};
+
+const abrirModalCobroDeuda = (reserva) => {
+  // Aquí abrirías un modal pequeño para elegir si paga en 'Efectivo' o 'Tarjeta'
+  // y luego llamarías a la API con la acción 'pagar_deuda'
+};
+
 onMounted(() => {
   cargarReservas();
   timerRefresco = setInterval(() => { if (document.visibilityState === 'visible') cargarReservas(); }, 180000);
@@ -706,5 +729,57 @@ onUnmounted(() => clearInterval(timerRefresco));
 
 .selected .promo-check {
   color: #e75480;
+}
+
+/* Etiqueta de aviso de deuda */
+.badge-deuda {
+  background-color: #fff3cd; /* Amarillo suave de fondo */
+  color: #856404;            /* Texto café/dorado oscuro */
+  border: 1px solid #ffeeba;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Icono de advertencia dentro del badge (opcional) */
+.badge-deuda::before {
+  content: "⚠️";
+  font-size: 0.85rem;
+}
+
+/* Botón para liquidar la deuda */
+.btn-cobrar {
+  background-color: #28a745; /* Verde éxito */
+  color: white;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-cobrar:hover {
+  background-color: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Estado de la fila si tiene deuda (opcional para AdminReservas.vue) */
+.reserva-con-deuda {
+  border-left: 4px solid #ffc107 !important;
+  background-color: #fffaf0; /* Un tono muy leve crema */
 }
 </style>

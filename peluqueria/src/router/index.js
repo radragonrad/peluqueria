@@ -12,6 +12,7 @@ import AvisoLegal from '../views/AvisoLegal.vue'; // 2. Crea esta vista
 import Privacidad from '../views/Privacidad.vue'; // 2. Crea esta vista
 import Cookies from '../views/Cookies.vue'; // 2. Crea esta vista
 import promociones from '../views/ClienteFidelidad.vue'; // 2. Crea esta vista
+import ReportarIncidencia from '../views/ReportarIncidencia.vue'; // 2. Crea esta vista
 
 
 
@@ -19,6 +20,8 @@ import promociones from '../views/ClienteFidelidad.vue'; // 2. Crea esta vista
 import ContactoView from '../components/ContactoSection.vue'
 import GaleriaView from '../components/GaleriaSection.vue'
 import SobreNosotrosView from '../components/SobreNosotrosSection.vue'
+import RestablecerPassword from '../views/ResetPasswordView.vue'
+
 
 const routes = [
   { path: '/', component: InicioView }, // 3. La raíz debe ser Inicio, no App
@@ -33,6 +36,8 @@ const routes = [
   { path: '/privacidad', component: Privacidad },
   { path: '/cookies', component: Cookies },
   { path: '/promociones', component: promociones },
+  { path: '/restablecer-password', component: RestablecerPassword },
+  { path: '/reportar-incidencia', component: ReportarIncidencia },
 
   
   // 4. AÑADIR LA RUTA DE ADMIN

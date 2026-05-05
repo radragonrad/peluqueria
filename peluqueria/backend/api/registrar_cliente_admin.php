@@ -1,6 +1,7 @@
 <?php
 // 1. Cargamos la configuración central y PHPMailer
 require_once __DIR__ . '/../../../private/config/db.php';
+require_once __DIR__ . '/../../../private/includes/functions.php';
 require_once 'admin_check.php'; // Asegura que solo el admin use este script
 
 require_once __DIR__ . '/../../addons/php/PHPMailer-master/src/Exception.php';
@@ -54,8 +55,8 @@ function enviar_notificacion_acceso($desde, $mensaje, $asunto, $para = array()) 
 // --- LÓGICA DE REGISTRO ---
 $data = json_decode(file_get_contents('php://input'), true);
 
-if (!$data || empty($data['nombre']) || empty($data['telefono'])) {
-    echo json_encode(['success' => false, 'message' => 'Nombre y teléfono son obligatorios']);
+if (!$data || empty($data['nombre'])) {
+    echo json_encode(['success' => false, 'message' => 'Nombre son obligatorios']);
     exit;
 }
 
@@ -64,6 +65,13 @@ try {
     $nombre_limpio = strtolower(trim($data['nombre']));
     $usuario_base = str_replace(' ', '.', $nombre_limpio); 
     $usuario_final = $usuario_base;
+
+    $nombre    = trim($data['nombre']);
+    $telefono  = !empty($data['telefono']) ? trim($data['telefono']) : '999999999';
+    $correo    = !empty($data['email']) ? trim($data['email']) : 'sinemail@'.$usuario_final;
+    $fecha_nac = !empty($data['fecha_nacimiento']) ? $data['fecha_nacimiento'] : '1900-01-01';
+
+
     
     $checkUser = $pdo->prepare("SELECT COUNT(*) FROM usuarios WHERE usuario = ?");
     $checkUser->execute([$usuario_final]);
@@ -83,11 +91,11 @@ try {
     $success = $stmt->execute([
         $usuario_final, 
         $data['nombre'], 
-        $data['correo'], 
+        $correo, 
         $passHash, 
         $_SERVER['REMOTE_ADDR'], 
-        $data['telefono'], 
-        $data['fecha_nacimiento']
+        $telefono, 
+        $fecha_nac
     ]);
 
     if ($success) {
@@ -95,7 +103,7 @@ try {
         $email_enviado = false;
 
         // 4. Preparación y Envío del Correo Estilo Premium
-        if (!empty($data['correo'])) {
+        if (!empty($correo) && $correo !== 'sinemail@sindominio.es') {
             $nombre_cliente = htmlspecialchars($data['nombre']);
             
             $mensajeHtml = "
@@ -109,7 +117,7 @@ try {
                     
                     <div style='background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 25px 0; border-left: 4px solid #bc9667;'>
                         <p style='margin: 0 0 10px 0; font-weight: bold; color: #1a1a1a;'>Tus credenciales de acceso:</p>
-                        <p style='margin: 5px 0;'><strong>Usuario:</strong> <span style='color: #bc9667;'>$usuario_final</span></p>
+                        <p style='margin: 5px 0;'><strong>Usuario:</strong> <span style='color: #bc9667;'>$correo</span></p>
                         <p style='margin: 5px 0;'><strong>Contraseña temporal:</strong> <span style='color: #bc9667;'>$password_plano</span></p>
                     </div>
 
@@ -131,19 +139,44 @@ try {
                 'R. Gutiérrez Hair Studio', 
                 $mensajeHtml, 
                 'Tus datos de acceso - R. Gutiérrez Hair Studio', 
-                [$data['correo']]
+                [$correo]
             );
         }
+
+        $id_admin_ejecutor = $_SESSION['user_id'] ?? 0;
+        $datos_log = [
+            'cliente_creado_id' => $usuario_id,
+            'nombre_cliente'    => $nombre,
+            'telefono'          => $telefono,
+            'correo_usado'      => $correo,
+            'fecha_nac'         => $fecha_nac
+        ];
+
+        registrarLog(
+            $pdo, 
+            $id_admin_ejecutor, 
+            'ALTA_CLIENTE_ADMIN', // Tipo de registro
+            $datos_log,           // Datos registrados
+            $email_enviado        // Si se envió el email
+        );
 
         echo json_encode([
             'success' => true, 
             'id' => $usuario_id,
+            'nombre_cliente' => $nombre,
             'email_enviado' => $email_enviado,
             'message' => 'Cliente registrado correctamente'
         ]);
     }
 
 } catch (PDOException $e) {
+   
+    $id_admin_ejecutor = $_SESSION['user_id'] ?? 0;
+    registrarLog($pdo, $id_admin_ejecutor, 'ALTA_CLIENTE_ERROR', [
+        'nombre_intentado' => $data['nombre'] ?? 'Desconocido',
+        'correo_intentado' => $data['email'] ?? 'Desconocido',
+        'error_mensaje'    => $e->getMessage()
+    ], 0);
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }

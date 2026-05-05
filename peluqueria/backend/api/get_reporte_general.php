@@ -19,6 +19,15 @@ try {
     $stmt = $pdo->query("SELECT COUNT(*) FROM usuarios WHERE rol = 'usuario' and activo = 1");
     $stats_clientes = $stmt->fetchColumn();
 
+    // Usuarios activos reales (excluye emails sin cuenta y cuentas de sistema)
+    $stmt = $pdo->query("
+        SELECT COUNT(*) FROM usuarios 
+        WHERE activo = 1 
+          AND rol = 'usuario' 
+          AND email NOT LIKE '%sinemail@%'
+    ");
+    $stats_usuarios_activos = $stmt->fetchColumn();
+
     // 2. Próximas 5 Reservas (Para la tablita lateral)
     // ---------------------------------------------------------
     $stmt = $pdo->prepare("
@@ -74,9 +83,10 @@ try {
     // Ajustamos el json_encode final para incluir estos datos
     echo json_encode([
         "stats" => [
-            "hoy" => $stats_hoy,
-            "clientes" => $stats_clientes,
-            "estrella" => $servicio_estrella
+            "hoy"             => $stats_hoy,
+            "clientes"        => $stats_clientes,
+            "estrella"        => $servicio_estrella,
+            "usuarios_activos" => $stats_usuarios_activos
         ],
         "proximas_reservas" => $proximas_reservas,
         "distribucion_semanal" => $distribucion,

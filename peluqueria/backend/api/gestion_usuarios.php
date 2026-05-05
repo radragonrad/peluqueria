@@ -137,12 +137,28 @@ try {
 
         // --- GESTIÓN DE PELUQUEROS (Avatar) ---
         if ($data['rol'] === 'admin' || $data['rol'] === 'empleado') {
+            // Caso: Es Staff. Aseguramos que exista y esté activo.
             $avatar_name = 'default-avatar-local.png'; 
-            // ... (Aquí puedes insertar tu código de gestión de $_FILES['avatar'] si lo usas)
+            
+            // Usamos el campo 'activo' del usuario para sincronizar al peluquero también
+            $estado_peluquero = isset($data['activo']) ? (int)$data['activo'] : 1;
+
             $sqlP = "INSERT INTO peluqueros (usuario_id, especialidad, activo, avatar) 
-                    VALUES (?, ?, 1, ?) 
-                    ON DUPLICATE KEY UPDATE especialidad = VALUES(especialidad)";
-            $pdo->prepare($sqlP)->execute([$usuario_id, $data['especialidad'] ?? '', $avatar_name]);
+                    VALUES (?, ?, ?, ?) 
+                    ON DUPLICATE KEY UPDATE 
+                        especialidad = VALUES(especialidad), 
+                        activo = VALUES(activo)";
+            $pdo->prepare($sqlP)->execute([
+                $usuario_id, 
+                $data['especialidad'] ?? '', 
+                $estado_peluquero, 
+                $avatar_name
+            ]);
+        } else {
+            // Caso: El rol es 'usuario' (Cliente). 
+            // Si antes era empleado, debemos desactivar su perfil de peluquero para que no aparezca en las reservas.
+            $sqlDesactivar = "UPDATE peluqueros SET activo = 0 WHERE usuario_id = ?";
+            $pdo->prepare($sqlDesactivar)->execute([$usuario_id]);
         }
 
         $pdo->commit();

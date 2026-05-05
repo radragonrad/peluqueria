@@ -243,12 +243,23 @@ const formatearFechaComparar = (dia, mes, anio) => {
 };
 
 // 4. Nueva lógica de bloqueo mejorada
+// 4. Nueva lógica de bloqueo mejorada (Incluye bloqueo hasta el 27 de abril)
 const esDiaBloqueado = (dia) => {
- if (!dia) return true;
+  if (!dia) return true;
+  
+  // --- NUEVA RESTRICCIÓN DE FECHA MÍNIMA ---
+  const fechaComparar = new Date(anioActual.value, mesActual.value, dia);
+  const fechaApertura = new Date(2026, 3, 27); // 27 de Abril de 2026 (Mes 3 porque Enero es 0)
+  
+  if (fechaComparar < fechaApertura) return true;
+  // -----------------------------------------
+
   if (esDiaPasado(dia)) return true;
   if (esExcepcionCierreTotal(dia)) return true;
+  
   // Solo bloqueamos si es día cerrado habitual Y no tiene horario especial
   if (esDiaCerrado(dia) && !esHorarioEspecial(dia)) return true;
+  
   return false;
 };
 

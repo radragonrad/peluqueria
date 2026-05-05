@@ -12,7 +12,7 @@ try {
     switch($metodo) {
         case 'GET':
             // Obtenemos todos los servicios ordenados alfabéticamente
-            $stmt = $pdo->query("SELECT * FROM servicios ORDER BY nombre ASC");
+            $stmt = $pdo->query("SELECT * FROM servicios WHERE activo = 1 ORDER BY nombre ASC");
             echo json_encode($stmt->fetchAll());
             break;
 

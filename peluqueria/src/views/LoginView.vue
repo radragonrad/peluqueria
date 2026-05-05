@@ -1,9 +1,10 @@
-<!-- src/views/LoginView.vue -->
 <template>
   <div class="container" style="max-width: 500px; margin: 5rem auto; padding: 2rem; background: #121212; border-radius: 16px; color: white;">
-    <h2 style="text-align: center; margin-bottom: 2rem;">{{ modo === 'login' ? 'Iniciar sesión' : 'Crear cuenta' }}</h2>
+    <h2 style="text-align: center; margin-bottom: 2rem;">
+      {{ modo === 'login' ? 'Iniciar sesión' : (modo === 'registro' ? 'Crear cuenta' : 'Recuperar contraseña') }}
+    </h2>
 
-    <form @submit.prevent="modo === 'login' ? iniciarSesion() : registrarse()">
+    <form @submit.prevent="manejarEnvio">
       
       <div v-if="modo === 'registro'">
         <input 
@@ -47,21 +48,27 @@
         class="input-field"
         style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #333; background: #1a1a1a; color: white; border-radius: 8px;"
       />
-     <input 
-        type="password" 
-        v-model="password" 
-        placeholder="Contraseña" 
-        autocomplete="pas"
-        required 
-        class="input-field"
-        style="width: 100%; padding: 0.75rem; border: 1px solid #333; background: #1a1a1a; color: white; border-radius: 8px;"
-      />
+
+      <div v-if="modo !== 'recuperar'">
+        <input 
+          type="password" 
+          v-model="password" 
+          placeholder="Contraseña" 
+          autocomplete="pas"
+          required 
+          class="input-field"
+          style="width: 100%; padding: 0.75rem; border: 1px solid #333; background: #1a1a1a; color: white; border-radius: 8px;"
+        />
+        <div v-if="modo === 'login'" style="text-align: right; margin-top: 0.5rem;">
+          <a href="#" @click.prevent="modo = 'recuperar'" style="color: #888; font-size: 0.75rem; text-decoration: none;">¿Olvidaste tu contraseña?</a>
+        </div>
+      </div>
 
       <div v-if="modo === 'registro' && password.length > 0" class="password-hints">
         <p :class="{ 'text-success': passwordCriteria?.longitud }">
           {{ passwordCriteria?.longitud ? '✅' : '❌' }} Mínimo 8 caracteres
         </p>
-        <p :class="{ 'text-success': passwordCriteria?.mayuscula }">
+        <!-- <p :class="{ 'text-success': passwordCriteria?.mayuscula }">
           {{ passwordCriteria?.mayuscula ? '✅' : '❌' }} Una mayúscula
         </p>
         <p :class="{ 'text-success': passwordCriteria?.numero }">
@@ -69,28 +76,44 @@
         </p>
         <p :class="{ 'text-success': passwordCriteria?.especial }">
           {{ passwordCriteria?.especial ? '✅' : '❌' }} Carácter especial (!@#$)
-        </p>
+        </p> -->
       </div>
       
       <button 
         type="submit" 
         :class="['btn-submit', { 'btn-disabled': !formularioValido || cargando }]"
-        :disabled="!formularioValido || cargando">
-        {{ cargando ? 'Procesando...' : (modo === 'login' ? 'Entrar' : 'Crear cuenta') }}
+        :disabled="!formularioValido || cargando"
+        style="margin-top: 1rem;">
+        {{ cargando ? 'Procesando...' : (modo === 'login' ? 'Entrar' : (modo === 'registro' ? 'Crear cuenta' : 'Enviar instrucciones')) }}
       </button>
-          </form>
-      <p v-if="successMessage" style="color: #4caf50; text-align: center; margin-bottom: 1rem;">
-        {{ successMessage }}
-      </p>
+    </form>
+
+    <p v-if="successMessage" style="color: #4caf50; text-align: center; margin-top: 1rem; margin-bottom: 1rem;">
+      {{ successMessage }}
+    </p>
     <p v-if="error" class="error" style="color: #f44336; margin-top: 0.5rem; text-align: center;">{{ error }}</p>
 
     <p class="toggle" style="margin-top: 1.5rem; text-align: center;">
-      {{ modo === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?' }}
-      <a href="#" @click.prevent="cambiarModo" style="color: #e75480; text-decoration: none; font-weight: bold;">
-        {{ modo === 'login' ? 'Regístrate' : 'Inicia sesión' }}
-      </a>
+      <template v-if="modo === 'recuperar'">
+        <a href="#" @click.prevent="modo = 'login'" style="color: #e75480; text-decoration: none; font-weight: bold;">Volver a Iniciar sesión</a>
+      </template>
+      <template v-else>
+        {{ modo === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?' }}
+        <a href="#" @click.prevent="cambiarModo" style="color: #e75480; text-decoration: none; font-weight: bold;">
+          {{ modo === 'login' ? 'Regístrate' : 'Inicia sesión' }}
+        </a>
+      </template>   
     </p>
+       <div class="login-footer">
+      <p class="incidencia-text">
+        ¿Tienes problemas para entrar?
+        <router-link to="/reportar-incidencia" class="link-incidencia">
+          Reportar una incidencia
+        </router-link>
+      </p>
+    </div>
   </div>
+  
 </template>
 
 <script>
@@ -98,13 +121,11 @@ import { ref, computed } from 'vue';
 import { useStore } from '../store.js';
 import { useRouter } from 'vue-router';
 
-
 export default {
   setup() {
     const router = useRouter();
     const store = useStore();
 
-    
     // Estado básico
     const modo = ref('login');
     const cargando = ref(false);
@@ -117,110 +138,58 @@ export default {
     const telefono = ref('');
     const fechaNacimiento = ref('');
     const successMessage = ref('');
-    
 
     const cambiarModo = () => {
       modo.value = modo.value === 'login' ? 'registro' : 'login';
       error.value = '';
+      successMessage.value = '';
     };
-
-    // Lista de palabras prohibidas (puedes ampliarla)
-    const NOMBRES_PROHIBIDOS = [
-      // --- Personajes y Ficción ---
-      'goku', 'vegeta', 'frieza', 'piccolo', 'gohan', 'naruto', 'sasuke',
-      'batman', 'superman', 'spiderman', 'ironman', 'thor', 'popeye',
-      'mickey', 'donald', 'messi', 'ronaldo', 'shrek', 'simpson',
-
-      // --- Patrones de Teclado (Mamporreo) ---
-      'asdasd', 'asdfgh', 'asdfasdf', 'qwer', 'qwerty', 'zxcv', 'bnm', 
-      '1234', '123456', 'aaaa', 'bbbb', 'cccc', 'asdfghjkl', 'yuiop',
-
-      // --- Términos de Sistema / Genéricos ---
-      'admin', 'administrator', 'root', 'soporte', 'support', 'test', 
-      'prueba', 'tester', 'invitado', 'guest', 'user', 'usuario', 
-      'cliente', 'null', 'undefined', 'nan', 'error', 'password',
-
-      // --- Palabras de relleno / Basura ---
-      'nombre', 'apellido', 'nadie', 'ninguno', 'yo', 'soy', 'hola', 
-      'dfgh', 'jklm', 'xcvb', 'cvbn', 'ghjk'
-    ];
 
     const esNombreReal = (val) => {
       const nombreMinus = val.toLowerCase().trim();
-      
-      // 1. Longitud mínima (Nombre + Apellido real suelen ser +8 caracteres)
-      if (nombreMinus.length < 8) return false;
-
-      // 2. Solo letras y espacios
+      if (nombreMinus.length < 5) return false;
       const regexLetras = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
       if (!regexLetras.test(nombreMinus)) return false;
-
-      // 3. Mínimo 2 palabras, y cada una de al menos 3 letras
-      // Esto evita "A b asdfgh"
-      const palabras = nombreMinus.split(/\s+/).filter(p => p.length >= 3);
+      // Mínimo dos palabras de al menos 2 letras
+      const palabras = nombreMinus.split(/\s+/).filter(p => p.length >= 2);
       if (palabras.length < 2) return false;
-
-      // --- VALIDACIONES DE "HUMANIDAD" ---
-
-      // 4. BLOQUEO DE CONSONANTES SEGUIDAS (El fin de 'asdf')
-      // Es muy raro ver 4 consonantes juntas en español (ej: "adsf", "sdfg")
-      // Esta regex busca 4 consonantes seguidas.
-      const regexConsonantes = /[^aeiouáéíóúü\s]{4,}/;
-      if (regexConsonantes.test(nombreMinus)) return false;
-
-      // 5. BLOQUEO DE REPETICIONES DE TECLADO
-      // Evita "asdasd", "qwerty", "zxcv"
-      const basuraTeclado = ['asdasd', 'asdf', 'sdfg', 'jkl', 'qwerty', 'zxcv', 'bnm'];
+      const basuraTeclado = ['asdasd', 'asdf', 'qwerty', 'zxcv'];
       if (basuraTeclado.some(b => nombreMinus.includes(b))) return false;
-
-      // 6. BLOQUEO DE LETRAS REPETIDAS (Evita 'aaaaa')
       if (/(.)\1\1/.test(nombreMinus)) return false;
-
-      // 7. LISTA NEGRA DE PERSONAJES
-      const prohibidos = ['goku', 'vegeta', 'admin', 'test', 'prueba', 'ficticio', 'invitado'];
+      const prohibidos = ['admin', 'test', 'prueba', 'ficticio', 'invitado'];
       if (prohibidos.some(p => nombreMinus.includes(p))) return false;
-
       return true;
     };
 
     const telefonoValido = computed(() => {
-      // Verifica que tenga 9 dígitos y empiece por 6, 7 o 9
       const tel = telefono.value.trim();
       return /^[679]\d{8}$/.test(tel);
     });
 
     const formularioValido = computed(() => {
+      if (modo.value === 'recuperar') return email.value.includes('@');
       if (modo.value === 'login') return email.value.includes('@') && password.value.length > 0;
       
       return (
         esNombreReal(nombre.value) && 
-        telefonoValido.value && // <--- Usamos la nueva validación
+        telefonoValido.value && 
         fechaNacimiento.value !== '' &&
         email.value.includes('@') &&
         passwordEsSegura.value
       );
     });
 
-    const estilosBoton = computed(() => {
-      const desactivado = cargando.value || !formularioValido.value;
-      return {
-        width: '100%',
-        padding: '0.75rem',
-        background: desactivado ? '#555' : '#e75480',
-        color: 'white',
-        border: 'none',
-        borderRadius: '8px',
-        fontWeight: 'bold',
-        cursor: desactivado ? 'not-allowed' : 'pointer',
-        transition: 'all 0.3s ease'
-      };
-    });
+    const manejarEnvio = () => {
+      if (modo.value === 'login') iniciarSesion();
+      else if (modo.value === 'registro') registrarse();
+      else enviarRecuperacion();
+    };
 
     const iniciarSesion = async () => {
       cargando.value = true;
       error.value = '';
       try {
-        const res = await fetch('/backend/api/auth.php', { // Ajustado a tu ruta de backend
+        const res = await fetch('/backend/api/auth.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -231,14 +200,12 @@ export default {
           credentials: 'include'
         });
         const data = await res.json();
-
         if (data.success) {
           localStorage.setItem('userId', data.id);
           localStorage.setItem('usuarioLogueado', 'true');
           localStorage.setItem('rol', data.rol);
           localStorage.setItem('usuario', data.usuario);
           store.setUsuarioLogueado(true, data.email, data.usuario, data.id);
-
           router.push(data.rol === 'admin' ? '/admin' : '/servicios');
         } else {
           error.value = data.message || 'Credenciales incorrectas.';
@@ -250,9 +217,71 @@ export default {
       }
     };
 
-    // Objeto con los criterios de seguridad
+    const registrarse = async () => {
+      if (!esNombreReal(nombre.value)) {
+        error.value = 'Por favor, introduce un nombre y apellido real.';
+        return;
+      }
+      cargando.value = true;
+      error.value = '';
+      successMessage.value = '';
+      try {
+        const res = await fetch('/backend/api/auth.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'register',
+            nombre: nombre.value,
+            telefono: telefono.value,
+            fecha_nacimiento: fechaNacimiento.value,
+            email: email.value,
+            password: password.value
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          successMessage.value = '¡Registro listo! Ya puedes logarte para pedir cita.';
+          nombre.value = ''; telefono.value = ''; fechaNacimiento.value = ''; email.value = ''; password.value = '';
+          modo.value = 'login';
+          setTimeout(() => { successMessage.value = ''; }, 8000);
+        } else {
+          error.value = data.message || 'Error al registrarse.';
+        }
+      } catch (err) {
+        error.value = 'No se pudo conectar con el servidor.';
+      } finally {
+        cargando.value = false;
+      }
+    };
+
+    const enviarRecuperacion = async () => {
+      cargando.value = true;
+      error.value = '';
+      successMessage.value = '';
+      try {
+        const res = await fetch('/backend/api/auth.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'forgot_password',
+            email: email.value
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          successMessage.value = 'Si el correo existe, recibirás instrucciones para restablecer tu contraseña.';
+          setTimeout(() => { modo.value = 'login'; successMessage.value = ''; }, 6000);
+        } else {
+          error.value = data.message || 'Error al procesar la solicitud.';
+        }
+      } catch (err) {
+        error.value = 'Error de conexión.';
+      } finally {
+        cargando.value = false;
+      }
+    };
+
     const passwordCriteria = computed(() => {
-      // Inicializamos valores por defecto para que nunca sea undefined
       const pass = password.value || ''; 
       return {
         longitud: pass.length >= 8,
@@ -262,80 +291,23 @@ export default {
       };
     });
 
-    // Comprobar si cumple TODOS los criterios (para el botón)
     const passwordEsSegura = computed(() => {
-      const c = passwordCriteria.value;
-      return c.longitud && c.mayuscula && c.numero && c.especial;
+      // Solo longitud mínima, igual que lo que se muestra al usuario
+      return passwordCriteria.value.longitud;
     });
-
-  const registrarse = async () => {
-
-    // Validación extra antes de enviar al servidor
-    if (!esNombreReal(nombre.value)) {
-      error.value = 'Por favor, introduce un nombre y apellido real (sin números ni personajes ficticios).';
-      return;
-    }
-
-    cargando.value = true;
-    error.value = '';
-    successMessage.value = ''; // Limpiamos mensajes previos
-
-    try {
-      const res = await fetch('/backend/api/auth.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'register',
-          nombre: nombre.value,
-          telefono: telefono.value,
-          fecha_nacimiento: fechaNacimiento.value,
-          email: email.value,
-          password: password.value
-        })
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        // 1. Mostrar mensaje de éxito
-        successMessage.value = '¡Registro casi listo! Revisa tu email para activar la cuenta.';
-
-        // 2. Limpiar TODOS los campos
-        nombre.value = '';
-        telefono.value = '';
-        fechaNacimiento.value = '';
-        email.value = '';    // También limpiamos el email
-        password.value = '';
-
-        // 3. Cambiar a modo login
-        modo.value = 'login';
-
-        // 4. OPCIONAL: Quitar el mensaje de éxito después de 8 segundos
-        setTimeout(() => {
-          successMessage.value = '';
-        }, 8000);
-
-      } else {
-        error.value = data.message || 'Error al registrarse.';
-      }
-    } catch (err) {
-      error.value = 'No se pudo conectar con el servidor.';
-    } finally {
-      cargando.value = false;
-    }
-  };
-  
 
     return {
       modo, email, password, nombre, telefono, fechaNacimiento,
-      successMessage,
-      cargando, error,
-      cambiarModo, iniciarSesion, registrarse, formularioValido, passwordCriteria, esNombreReal
+      successMessage, cargando, error,
+      cambiarModo, iniciarSesion, registrarse, manejarEnvio,
+      formularioValido, passwordCriteria, esNombreReal
     };
   }
 };
 </script>
+
 <style scoped>
+/* Tus estilos se mantienen idénticos */
 .btn-submit {
   width: 100%;
   padding: 0.75rem;
@@ -367,17 +339,49 @@ export default {
 .password-hints p {
   font-size: 0.75rem;
   margin: 0.2rem 0;
-  color: #ff4d4d; /* Rojo por defecto */
+  color: #ff4d4d;
   transition: color 0.3s ease;
 }
 
 .password-hints .text-success {
-  color: #4caf50; /* Verde cuando cumple */
+  color: #4caf50;
 }
 
-/* Estilo para el input cuando está enfocado */
 .input-field:focus {
   outline: none;
   border-color: #e75480;
 }
+
+/* Añade o actualiza esto en la sección style de LoginView.vue */
+.login-footer {
+  margin-top: 2rem;
+  text-align: center;
+  border-top: 1px solid #333; /* Color oscuro para que combine con tu fondo */
+  padding-top: 1.5rem;
+}
+
+.incidencia-text {
+  font-size: 0.85rem;
+  color: #888;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.link-incidencia {
+  color: #e75480; /* Usamos el rosa de tu botón Entrar */
+  text-decoration: none;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: opacity 0.2s ease;
+}
+
+.link-incidencia:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
 </style>

@@ -50,14 +50,15 @@ import { useRouter } from 'vue-router';
 import AdminReportes from '../components/admin/AdminReportes.vue';
 import AdminUsuarios from '../components/admin/AdminUsuarios.vue';
 import AdminServicios from '../components/admin/AdminServicios.vue';
-import AdminReservas from '../components/admin/AdminReservas.vue';
+// import AdminReservas from '../components/admin/AdminReservas.vue';
 import AdminHorarios from '../components/admin/AdminHorarios.vue';
 import AdminDiasExcepciones from '../components/admin/AdminDiasExcepciones.vue';
-import AdminAgendar from '../components/admin/AdminAgendar.vue';
+// import AdminAgendar from '../components/admin/AdminAgendar.vue';
 import Analisis from '../components/admin/AnalisisView.vue';
 import Caja from '../components/admin/AdminCaja.vue';
 import Etiquetas from '../components/admin/AdminEtiquetas.vue';
 import Promociones from '../components/admin/AdminPromos.vue';
+import CitasView from '../components/admin/CitasView.vue'; // Cambia el origen al nuevo archivo
 
 const router = useRouter();
 const seccionActiva = ref('reportes');
@@ -65,8 +66,9 @@ const menuAbierto = ref(false);
 
 const etiquetas = {
   reportes: 'Reportes',
-  reservas: 'Reservas',
-  agendar: 'Agendar',
+  // reservas: 'Reservas',
+  // agendar: 'Agendar',
+  citas: 'Citas',
   analisis: 'Análisis',
   caja: 'Caja',
   usuarios: 'Usuarios',
@@ -81,10 +83,11 @@ const iconos = {
   reportes: 'fas fa-chart-line',
   usuarios: 'fas fa-users',
   servicios: 'fas fa-concierge-bell',
-  reservas: 'fas fa-calendar-check',
+  // reservas: 'fas fa-calendar-check',
   horarios: 'fas fa-clock',
+  citas: 'fas fa-calendar-check',
   excepciones: 'fas fa-calendar-times',
-  agendar: 'fas fa-calendar-check',
+  // agendar: 'fas fa-calendar-check',
   analisis: 'fas fa-chart-pie',
   caja: 'fas fa-cash-register',
   etiquetas: 'fas fa-tags',
@@ -95,10 +98,11 @@ const componentes = {
   reportes: AdminReportes,
   usuarios: AdminUsuarios,
   servicios: AdminServicios,
-  reservas: AdminReservas,
+  // reservas: AdminReservas,
+  citas: CitasView,
   horarios: AdminHorarios,
   excepciones: AdminDiasExcepciones,
-  agendar: AdminAgendar,
+  // agendar: AdminAgendar,
   analisis: Analisis,
   caja: Caja,
   etiquetas: Etiquetas,
