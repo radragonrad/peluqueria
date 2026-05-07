@@ -164,7 +164,7 @@ if (isset($data['user_id'], $data['servicio_id'], $data['peluquero_id'], $data['
         $stmt_limite->execute([$user_id]);
         $citas_activas = $stmt_limite->fetchColumn();
 
-        if ($citas_activas >= 2) {
+        if ($citas_activas >= 3) {
             echo json_encode([
                 'success' => false,
                 'message' => 'Ya tienes 2 citas reservadas. Cancela una antes de reservar otra.',

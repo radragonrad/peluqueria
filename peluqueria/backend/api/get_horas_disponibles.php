@@ -49,7 +49,7 @@ try {
         $stmt_check->execute([$usuario_id, $hoy_sql]);
         $citas_activas = $stmt_check->fetchColumn();
 
-        if ($citas_activas >= 2 && ($_SESSION['usuario'] ?? '') !== 'hadesinfer') {
+        if ($citas_activas >= 3 && ($_SESSION['usuario'] ?? '') !== 'hadesinfer') {
             echo json_encode([
                 'error'   => 'Limite_alcanzado',
                 'mensaje' => 'Ya tienes 2 citas reservadas...',
