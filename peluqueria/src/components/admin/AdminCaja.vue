@@ -94,17 +94,17 @@
         </thead>
         <tbody>
           <tr v-for="m in movimientos" :key="m.id" :class="m.tipo.toLowerCase()">
-            <td>{{ formatearFecha(m.fecha) }}</td>
-            <td><strong>{{ m.concepto }}</strong></td>
-            <td><span class="cat-tag">{{ m.categoria }}</span></td>
-            <td class="metodo-pago-cell">
-              <i :class="obtenerIconoPago(m.metodo_pago)"></i> 
+            <td data-label="Fecha">{{ formatearFecha(m.fecha) }}</td>
+            <td data-label="Concepto"><strong>{{ m.concepto }}</strong></td>
+            <td data-label="Categoría"><span class="cat-tag">{{ m.categoria }}</span></td>
+            <td class="metodo-pago-cell" data-label="Método">
+              <i :class="obtenerIconoPago(m.metodo_pago)"></i>
               {{ m.metodo_pago }}
             </td>
-            <td class="importe-col" :class="m.tipo === 'GASTO' ? 'gasto' : 'ingreso'">
+            <td class="importe-col" data-label="Importe" :class="m.tipo === 'GASTO' ? 'gasto' : 'ingreso'">
               {{ m.tipo === 'GASTO' ? '-' : '+' }}{{ m.importe }}€
             </td>
-            <td style="text-align: center;">
+            <td class="acciones-cell" data-label="Acciones" style="text-align: center;">
               <button @click="eliminarMovimiento(m.id)" class="btn-del" title="Eliminar movimiento">
                 <i class="fas fa-trash"></i>
               </button>
@@ -752,11 +752,139 @@ onMounted(() => cargarDatosCaja());
 }
 
 .btn-clear {
-  position: absolute;
-  right: 10px;
-  background: none;
+  background: #f1f5f9;
   border: none;
-  color: #94a3b8;
+  color: #64748b;
   cursor: pointer;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  transition: 0.2s;
+}
+
+.btn-clear:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+/* --- RESPONSIVE --- */
+
+/* Portátiles pequeños y tablets en horizontal */
+@media (max-width: 1200px) {
+  .caja-view { padding: 20px; }
+
+  .stats-grid,
+  .payment-methods-breakdown {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+}
+
+/* Tablets (iPad vertical) */
+@media (max-width: 992px) {
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .title-row {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+  }
+
+  .input-date {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .btn-nuevo {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* Móviles */
+@media (max-width: 768px) {
+  .caja-view { padding: 15px 10px; }
+
+  .title-row h1 { font-size: 1.4rem; }
+
+  .filters-caja-mini {
+    width: 100%;
+  }
+
+  .filters-caja-mini button {
+    flex: 1;
+    padding: 8px 6px;
+    font-size: 0.78rem;
+  }
+
+  .stat-card { padding: 15px; border-radius: 16px; }
+  .stat-info h3 { font-size: 1.25rem; }
+
+  .method-card { padding: 12px; gap: 10px; }
+  .method-info .method-amount { font-size: 1rem; }
+
+  /* Tabla → tarjetas apiladas */
+  .custom-table thead { display: none; }
+
+  .custom-table,
+  .custom-table tbody,
+  .custom-table tr,
+  .custom-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .custom-table tr {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .custom-table td {
+    padding: 6px 0;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .custom-table td::before {
+    content: attr(data-label);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    color: #94a3b8;
+    flex-shrink: 0;
+  }
+
+  .custom-table td.empty-state {
+    justify-content: center;
+    padding: 20px 0;
+  }
+
+  .custom-table td.empty-state::before { content: none; }
+}
+
+/* Móviles estrechos */
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+
+  .header-actions .btn-nuevo {
+    padding: 12px 10px;
+    font-size: 0.9rem;
+  }
+
+  .form-row { grid-template-columns: 1fr; }
 }
 </style>

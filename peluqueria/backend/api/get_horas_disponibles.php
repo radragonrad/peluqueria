@@ -18,7 +18,8 @@
  *    es > 0 pero < 15 min (hueco muerto inaprovechable).
  *
  * OTRAS REGLAS:
- *  - Solo horario del establecimiento (sin márgenes admin).
+ *  - Horario propio del peluquero (tabla horarios_peluquero), sin márgenes admin.
+ *    Si el peluquero no tiene ese día configurado como abierto, no hay slots.
  *  - Hoy: se omiten slots con inicio <= ahora + 5 min.
  *  - Restricción: no antes del 2026-04-27.
  *  - Límite: máximo 2 citas pendientes en los próximos 7 días.
@@ -84,10 +85,12 @@ try {
     $duracion_min = intval($stmt->fetchColumn() ?: 30);
     $duracion_seg = $duracion_min * 60;
 
-    // ── 2. Horario base del día ──────────────────────────────────────────────
+    // ── 2. Horario base del día (propio del peluquero) ───────────────────────
+    // Si el peluquero no tiene fila para este día (o no la tiene configurada
+    // en absoluto), se considera cerrado para él ese día.
     $dia_semana = intval(date('N', strtotime($fecha)));
-    $stmt = $pdo->prepare('SELECT * FROM horarios WHERE id_dia = ?');
-    $stmt->execute([$dia_semana]);
+    $stmt = $pdo->prepare('SELECT * FROM horarios_peluquero WHERE peluquero_id = ? AND id_dia = ?');
+    $stmt->execute([$peluquero_id, $dia_semana]);
     $horario = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$horario || $horario['abierto'] == 0) {

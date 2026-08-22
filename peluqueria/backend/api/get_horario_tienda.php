@@ -1,12 +1,39 @@
 <?php
 // backend/api/get_horario_tienda.php
-
+// Sin peluquero_id: horario general de la tienda (usado en la web para info de contacto).
+// Con peluquero_id: horario propio de ese peluquero (usado al reservar cita).
+// Si el peluquero no tiene un día configurado, se devuelve como cerrado.
 
 require_once __DIR__ . '/../../../private/config/db.php';
+
+const GHT_DIAS_SEMANA = [
+    1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves',
+    5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo',
+];
+
 try {
-    // 1. Obtener horario semanal normal
-    $stmt = $pdo->query("SELECT id_dia, dia_semana, abierto, h_apertura_1, h_cierre_1, h_apertura_2, h_cierre_2 FROM horarios ORDER BY id_dia ASC");
-    $horarioNormal = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $peluquero_id = intval($_GET['peluquero_id'] ?? 0);
+
+    if ($peluquero_id) {
+        $stmt = $pdo->prepare("SELECT id_dia, dia_semana, abierto, h_apertura_1, h_cierre_1, h_apertura_2, h_cierre_2 FROM horarios_peluquero WHERE peluquero_id = ? ORDER BY id_dia ASC");
+        $stmt->execute([$peluquero_id]);
+        $filasExistentes = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $f) {
+            $filasExistentes[$f['id_dia']] = $f;
+        }
+
+        $horarioNormal = [];
+        foreach (GHT_DIAS_SEMANA as $id_dia => $nombre) {
+            $horarioNormal[] = $filasExistentes[$id_dia] ?? [
+                'id_dia' => $id_dia, 'dia_semana' => $nombre, 'abierto' => 0,
+                'h_apertura_1' => null, 'h_cierre_1' => null, 'h_apertura_2' => null, 'h_cierre_2' => null,
+            ];
+        }
+    } else {
+        // 1. Obtener horario semanal normal (tienda)
+        $stmt = $pdo->query("SELECT id_dia, dia_semana, abierto, h_apertura_1, h_cierre_1, h_apertura_2, h_cierre_2 FROM horarios ORDER BY id_dia ASC");
+        $horarioNormal = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     // 2. Comprobar excepciones para HOY y MAÑANA
     // Asumo que la tabla tiene columnas 'fecha' y 'cerrado' (1 para cerrado)

@@ -67,7 +67,7 @@ if (isset($_GET['token'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activación | R. Gutiérrez Studio</title>
+    <title>Activación | Essencia Barber Study</title>
     <style>
         body { background-color: #1a1a1a; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; color: white; }
         .container { text-align: center; background: #2a2a2a; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-width: 400px; width: 90%; border: 1px solid #bc9667; }
@@ -90,7 +90,7 @@ if (isset($_GET['token'])) {
                 else echo '❌';
             ?>
         </div>
-        <h2>R. Gutiérrez Studio</h2>
+        <h2>Essencia Barber Study</h2>
         <div class="alert <?php echo htmlspecialchars($tipo_alerta); ?>">
             <?php echo htmlspecialchars($mensaje); ?>
         </div>

@@ -24,7 +24,10 @@ try {
             exit;
         }
 
-        $sql = "SELECT 
+        $peluqueroId = isset($_GET['peluquero_id']) && ctype_digit((string)$_GET['peluquero_id'])
+                       ? (int)$_GET['peluquero_id'] : null;
+
+        $sql = "SELECT
                     r.id, r.fecha, r.hora, r.estado, r.metodo_pago, r.google_event_id,
                     r.peluquero_id, r.servicio_id,
                     u.nombre  AS cliente_nombre,
@@ -39,11 +42,18 @@ try {
                 JOIN servicios s  ON r.servicio_id   = s.id
                 JOIN peluqueros p ON r.peluquero_id  = p.id
                 JOIN usuarios  up ON p.usuario_id    = up.id
-                WHERE r.fecha BETWEEN ? AND ?
-                ORDER BY r.fecha ASC, r.hora ASC";
+                WHERE r.fecha BETWEEN ? AND ?";
+        $params = [$desde, $hasta];
+
+        if ($peluqueroId) {
+            $sql .= " AND r.peluquero_id = ?";
+            $params[] = $peluqueroId;
+        }
+
+        $sql .= " ORDER BY r.fecha ASC, r.hora ASC";
 
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$desde, $hasta]);
+        $stmt->execute($params);
         $resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Limpiamos etiquetas_raw si existiera en el futuro (por ahora la columna no está en el SELECT)

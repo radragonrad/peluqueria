@@ -205,8 +205,9 @@ export default {
           localStorage.setItem('usuarioLogueado', 'true');
           localStorage.setItem('rol', data.rol);
           localStorage.setItem('usuario', data.usuario);
+          localStorage.setItem('nombre', data.nombre);
           store.setUsuarioLogueado(true, data.email, data.usuario, data.id);
-          router.push(data.rol === 'admin' ? '/admin' : '/servicios');
+          router.push((data.rol === 'admin' || data.rol === 'empleado') ? '/admin' : '/servicios');
         } else {
           error.value = data.message || 'Credenciales incorrectas.';
         }

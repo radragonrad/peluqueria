@@ -9,25 +9,31 @@
     <aside class="sidebar" :class="{ 'is-open': menuAbierto }">
       <div class="sidebar-brand">
         <i class="fas fa-cut"></i>
-        Admin Rúben
+        {{ nombreUsuario }}
       </div>
-      
-      <nav class="sidebar-menu">
-        
-        <template v-for="(comp, key) in etiquetas" :key="key">
-          
-          <button 
-            @click="cambiarSeccion(key)" 
-            :class="{ active: seccionActiva === key }"
-          >
-            <i :class="iconos[key]"></i>
-            {{ comp }}
-          </button>
 
-          
-          <div v-if="key === 'caja'" class="menu-divider"></div>
-          
+      <div class="peluquero-switcher" v-if="peluqueros.length > 0">
+        <p class="switcher-label"><i class="fas fa-user-tie"></i> Gestionando</p>
+        <select v-model="peluqueroActivoId" class="select-peluquero">
+          <option v-for="p in peluqueros" :key="p.id" :value="p.id">{{ p.nombre }}</option>
+        </select>
+      </div>
+
+      <nav class="sidebar-menu">
+
+        <template v-for="(comp, key) in todasEtiquetas" :key="key">
+          <template v-if="!seccionesPermitidas || seccionesPermitidas.includes(key)">
+            <button
+              @click="cambiarSeccion(key)"
+              :class="{ active: seccionActiva === key }"
+            >
+              <i :class="iconos[key]"></i>
+              {{ comp }}
+            </button>
+            <div v-if="key === 'caja'" class="menu-divider"></div>
+          </template>
         </template>
+
       </nav>
 
       <div class="sidebar-footer">
@@ -39,19 +45,21 @@
     </aside>
 
     <main class="main-content">      
-      <component :is="componenteActual" @cambiar-seccion="seccionActiva = $event"/>
+      <component :is="componenteActual" @cambiar-seccion="cambiarSeccion($event)"/>
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, provide, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AdminReportes from '../components/admin/AdminReportes.vue';
+import AdminInformes from '../components/admin/AdminInformes.vue';
 import AdminUsuarios from '../components/admin/AdminUsuarios.vue';
 import AdminServicios from '../components/admin/AdminServicios.vue';
 // import AdminReservas from '../components/admin/AdminReservas.vue';
 import AdminHorarios from '../components/admin/AdminHorarios.vue';
+import AdminHorariosPeluquero from '../components/admin/AdminHorariosPeluquero.vue';
 import AdminDiasExcepciones from '../components/admin/AdminDiasExcepciones.vue';
 // import AdminAgendar from '../components/admin/AdminAgendar.vue';
 import Analisis from '../components/admin/AnalisisView.vue';
@@ -61,23 +69,80 @@ import Promociones from '../components/admin/AdminPromos.vue';
 import CitasView from '../components/admin/CitasView.vue'; // Cambia el origen al nuevo archivo
 
 const router = useRouter();
+
+const rolUsuario = ref(localStorage.getItem('rol') ?? 'usuario');
+const nombreUsuario = ref(localStorage.getItem('nombre') || localStorage.getItem('usuario') || 'Usuario');
+
 const seccionActiva = ref('reportes');
 const menuAbierto = ref(false);
 
-const etiquetas = {
+const peluqueros = ref([]);
+const peluqueroActivo = ref(null);
+
+// Secciones accesibles cuando el contexto es "empleado" (el usuario logueado
+// es empleado, o el peluquero seleccionado en el switcher lo es): pueden ver
+// y gestionar sus propias citas y su propio horario, pero nada más.
+const seccionesPermitidas = computed(() => {
+  const esContextoEmpleado = rolUsuario.value === 'empleado' || peluqueroActivo.value?.rol === 'empleado';
+  return esContextoEmpleado ? ['citas', 'horariosPeluquero'] : null; // null = sin restricción
+});
+
+const peluqueroActivoId = computed({
+  get: () => peluqueroActivo.value?.id ?? null,
+  set: (id) => {
+    peluqueroActivo.value = peluqueros.value.find(p => p.id == id) ?? null;
+  }
+});
+
+// Al cambiar de peluquero, ajustar sección activa
+watch(peluqueroActivo, (nuevo) => {
+  const permitido = (rolUsuario.value === 'empleado' || nuevo?.rol === 'empleado')
+    ? ['citas', 'horariosPeluquero']
+    : null;
+
+  if (permitido && !permitido.includes(seccionActiva.value)) {
+    seccionActiva.value = 'citas';
+  } else if (!permitido && seccionActiva.value === 'citas' && rolUsuario.value !== 'empleado') {
+    seccionActiva.value = 'reportes';
+  }
+});
+
+provide('peluqueroActivo', peluqueroActivo);
+
+onMounted(async () => {
+  rolUsuario.value = localStorage.getItem('rol') ?? 'usuario';
+  nombreUsuario.value = localStorage.getItem('nombre') || localStorage.getItem('usuario') || 'Usuario';
+
+  try {
+    const res = await fetch('/backend/api/obtener_peluqueros.php');
+    const data = await res.json();
+    peluqueros.value = Array.isArray(data) ? data : (data.peluqueros ?? []);
+    if (peluqueros.value.length > 0) {
+      const userId = parseInt(localStorage.getItem('userId'));
+      const propio = peluqueros.value.find(p => p.usuario_id == userId);
+      peluqueroActivo.value = propio ?? peluqueros.value[0];
+      seccionActiva.value = seccionesPermitidas.value ? seccionesPermitidas.value[0] : 'reportes';
+    }
+  } catch (e) {
+    console.error('Error al cargar peluqueros:', e);
+  }
+});
+
+const todasEtiquetas = {
   reportes: 'Reportes',
-  // reservas: 'Reservas',
-  // agendar: 'Agendar',
   citas: 'Citas',
   analisis: 'Análisis',
   caja: 'Caja',
   usuarios: 'Usuarios',
   servicios: 'Servicios',
   horarios: 'Horarios',
+  horariosPeluquero: 'Horarios Peluqueros',
   excepciones: 'Excepciones',
   etiquetas: 'Etiquetas',
-  Promociones: 'Promociones'
+  Promociones: 'Promociones',
+  informes: 'Informes'
 };
+
 
 const iconos = {
   reportes: 'fas fa-chart-line',
@@ -85,13 +150,15 @@ const iconos = {
   servicios: 'fas fa-concierge-bell',
   // reservas: 'fas fa-calendar-check',
   horarios: 'fas fa-clock',
+  horariosPeluquero: 'fas fa-user-clock',
   citas: 'fas fa-calendar-check',
   excepciones: 'fas fa-calendar-times',
   // agendar: 'fas fa-calendar-check',
   analisis: 'fas fa-chart-pie',
   caja: 'fas fa-cash-register',
   etiquetas: 'fas fa-tags',
-  Promociones: 'fas fa-ticket-alt'
+  Promociones: 'fas fa-ticket-alt',
+  informes: 'fas fa-file-alt'
 };
 
 const componentes = {
@@ -101,19 +168,22 @@ const componentes = {
   // reservas: AdminReservas,
   citas: CitasView,
   horarios: AdminHorarios,
+  horariosPeluquero: AdminHorariosPeluquero,
   excepciones: AdminDiasExcepciones,
   // agendar: AdminAgendar,
   analisis: Analisis,
   caja: Caja,
   etiquetas: Etiquetas,
-  Promociones: Promociones
+  Promociones: Promociones,
+  informes: AdminInformes
 };
 
 const componenteActual = computed(() => componentes[seccionActiva.value]);
 
 const cambiarSeccion = (key) => {
+  if (seccionesPermitidas.value && !seccionesPermitidas.value.includes(key)) return;
   seccionActiva.value = key;
-  menuAbierto.value = false; // Cerrar menú automáticamente al elegir sección en móvil
+  menuAbierto.value = false;
 };
 
 const logout = () => {
@@ -126,6 +196,7 @@ const logout = () => {
 .admin-container {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   background-color: #f4f7f6;
   overflow: hidden;
@@ -154,7 +225,12 @@ const logout = () => {
   gap: 12px;
 }
 
-.sidebar-menu { flex: 1; }
+.sidebar-menu {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
 .sidebar-menu button {
   width: 100%;
@@ -243,6 +319,7 @@ const logout = () => {
     left: -260px; /* Escondido */
     top: 0;
     bottom: 0;
+    height: 100dvh; /* Altura visible real en Safari/iPad */
   }
 
   .sidebar.is-open {
@@ -309,5 +386,38 @@ const logout = () => {
 .sidebar-menu {
   display: flex;
   flex-direction: column;
+}
+
+.peluquero-switcher {
+  padding: 0 20px 16px;
+  border-bottom: 1px solid #333;
+}
+
+.switcher-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.select-peluquero {
+  width: 100%;
+  background: #2b2b2b;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+}
+
+.select-peluquero:focus {
+  border-color: #e75480;
 }
 </style>

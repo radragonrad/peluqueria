@@ -4,7 +4,7 @@
       <div class="footer-grid">
         
         <div class="footer-column brand">
-          <img src="../assets/bg-logo.png" alt="RG Hair Studio" class="footer-logo-img">
+          <img src="../assets/bg-logo.png" alt="Essencia Barber Study" class="footer-logo-img">
           <p class="brand-text">
             Expertos en estilismo masculino y barbería clásica. Tu imagen, nuestra firma.
           </p>
@@ -17,6 +17,9 @@
             </a>
             <a href="https://wa.me/34657553377" target="_blank" class="social-pill whatsapp">
               <i class="fab fa-whatsapp"></i>
+            </a>
+            <a href="https://g.page/r/CaOgDoX1ryEDEBM/review" target="_blank" rel="noopener" class="social-pill google" title="Déjanos tu reseña en Google">
+              <i class="fab fa-google"></i>
             </a>
           </div>
         </div>
@@ -63,7 +66,7 @@
           <h3 class="column-title">UBICACIÓN</h3>
           <div class="map-container">
             <a href="https://www.google.com/maps/search/?api=1&query=C.+San+Jose%2C+9%2C+41808+Villanueva+del+Ariscal%2C+Sevilla" target="_blank" rel="noopener">
-              <img src="../assets/mapa-ubicacion.png" alt="Ubicación R. Gutiérrez Hair Studio" class="map-image">
+              <img src="../assets/mapa-ubicacion.png" alt="Ubicación Essencia Barber Study" class="map-image">
               <div class="map-overlay">
                 <i class="fas fa-map-marker-alt"></i>
                 <span>Ver en Google Maps</span>
@@ -75,7 +78,7 @@
 
       <div class="footer-bottom">
         <div class="bottom-content">
-          <p>© {{ currentYear }} RG HAIR STUDIO - Todos los derechos reservados</p>
+          <p>© {{ currentYear }} ESSENCIA BARBER STUDY - Todos los derechos reservados</p>
           <div class="legal-links">
             <router-link to="/aviso-legal">Aviso Legal</router-link>
             <router-link to="/privacidad">Privacidad</router-link>

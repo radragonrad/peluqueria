@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 function esAdmin() {
-    return isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin';
+    return isset($_SESSION['rol']) && in_array($_SESSION['rol'], ['admin', 'empleado'], true);
 }
 
 if (!esAdmin()) {

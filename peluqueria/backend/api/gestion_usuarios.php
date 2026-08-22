@@ -94,12 +94,23 @@ try {
         $pdo->beginTransaction();
 
         if ($id) {
-            // EDICIÓN
-            $sql = "UPDATE usuarios SET nombre=?, email=?, telefono=?, fecha_nacimiento=?, rol=?, activo=? WHERE id=?";
-            $pdo->prepare($sql)->execute([
-                $data['nombre'], $data['email'], $data['telefono'], 
-                $data['fecha_nacimiento'], $data['rol'], $data['activo'], $id
-            ]);
+            // EDICIÓN: actualizamos SOLO los campos recibidos. El interruptor de
+            // estado de la tabla manda un payload parcial (id, activo, nombre,
+            // email, rol) y no debe machacar telefono/fecha_nacimiento, que son
+            // NOT NULL en la tabla.
+            $campos = [];
+            $valores = [];
+            foreach (['nombre', 'email', 'telefono', 'fecha_nacimiento', 'rol', 'activo'] as $campo) {
+                if (isset($data[$campo]) && $data[$campo] !== '') {
+                    $campos[] = "$campo = ?";
+                    $valores[] = $data[$campo];
+                }
+            }
+            if (!empty($campos)) {
+                $valores[] = $id;
+                $sql = "UPDATE usuarios SET " . implode(', ', $campos) . " WHERE id = ?";
+                $pdo->prepare($sql)->execute($valores);
+            }
             $usuario_id = $id;
             $usuario_final = $data['usuario'] ?? '';
             $es_nuevo = false;
@@ -136,22 +147,61 @@ try {
         // }
 
         // --- GESTIÓN DE PELUQUEROS (Avatar) ---
-        if ($data['rol'] === 'admin' || $data['rol'] === 'empleado') {
-            // Caso: Es Staff. Aseguramos que exista y esté activo.
-            $avatar_name = 'default-avatar-local.png'; 
-            
-            // Usamos el campo 'activo' del usuario para sincronizar al peluquero también
-            $estado_peluquero = isset($data['activo']) ? (int)$data['activo'] : 1;
+        // El rol y el estado pueden no venir en un guardado parcial: los leemos de BD.
+        $stmtActual = $pdo->prepare("SELECT rol, activo FROM usuarios WHERE id = ?");
+        $stmtActual->execute([$usuario_id]);
+        $usuarioActual = $stmtActual->fetch(PDO::FETCH_ASSOC) ?: ['rol' => 'usuario', 'activo' => 1];
+        $rol = $data['rol'] ?? $usuarioActual['rol'];
 
-            $sqlP = "INSERT INTO peluqueros (usuario_id, especialidad, activo, avatar) 
-                    VALUES (?, ?, ?, ?) 
-                    ON DUPLICATE KEY UPDATE 
-                        especialidad = VALUES(especialidad), 
-                        activo = VALUES(activo)";
+        if ($rol === 'admin' || $rol === 'empleado') {
+            // Caso: Es Staff. Aseguramos que exista y esté activo.
+
+            // Si se ha subido una foto nueva, la validamos y la movemos a uploads/avatares.
+            $avatar_name = null;
+            if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+                $ext = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
+                $extensionesPermitidas = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                if (in_array($ext, $extensionesPermitidas, true) && getimagesize($_FILES['avatar']['tmp_name']) !== false) {
+                    $nuevoNombre = 'user_' . $usuario_id . '_' . time() . '.' . $ext;
+                    $destino = __DIR__ . '/../../uploads/avatares/' . $nuevoNombre;
+                    if (move_uploaded_file($_FILES['avatar']['tmp_name'], $destino)) {
+                        $avatar_name = $nuevoNombre;
+                    }
+                }
+            }
+
+            // Sin foto nueva: en edición mantenemos la actual, en alta usamos la de por defecto.
+            if ($avatar_name === null) {
+                if ($id) {
+                    $stmtAv = $pdo->prepare("SELECT avatar FROM peluqueros WHERE usuario_id = ?");
+                    $stmtAv->execute([$usuario_id]);
+                    $avatar_name = $stmtAv->fetchColumn() ?: 'default-avatar-local.png';
+                } else {
+                    $avatar_name = 'default-avatar-local.png';
+                }
+            }
+
+            // Sin especialidad nueva: en edición mantenemos la actual.
+            $especialidad = $data['especialidad'] ?? null;
+            if ($especialidad === null && $id) {
+                $stmtEsp = $pdo->prepare("SELECT especialidad FROM peluqueros WHERE usuario_id = ?");
+                $stmtEsp->execute([$usuario_id]);
+                $especialidad = $stmtEsp->fetchColumn() ?: '';
+            }
+
+            // Usamos el campo 'activo' del usuario para sincronizar al peluquero también
+            $estado_peluquero = (int)($data['activo'] ?? $usuarioActual['activo']);
+
+            $sqlP = "INSERT INTO peluqueros (usuario_id, especialidad, activo, avatar)
+                    VALUES (?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        especialidad = VALUES(especialidad),
+                        activo = VALUES(activo),
+                        avatar = VALUES(avatar)";
             $pdo->prepare($sqlP)->execute([
-                $usuario_id, 
-                $data['especialidad'] ?? '', 
-                $estado_peluquero, 
+                $usuario_id,
+                $especialidad ?? '',
+                $estado_peluquero,
                 $avatar_name
             ]);
         } else {
@@ -170,7 +220,7 @@ try {
             $mensajeHtml = "
             <div style='font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
                 <div style='background-color: #1a1a1a; color: #ffffff; padding: 20px; text-align: center;'>
-                    <h1 style='margin: 0; font-size: 24px; letter-spacing: 1px;'>R. Gutiérrez Hair Studio</h1>
+                    <h1 style='margin: 0; font-size: 24px; letter-spacing: 1px;'>Essencia Barber Study</h1>
                 </div>
                 <div style='padding: 30px; line-height: 1.6; color: #333;'>
                     <p style='font-size: 18px;'>Hola <strong>$nombre_cliente</strong>,</p>
@@ -187,9 +237,9 @@ try {
             </div>";
 
             $email_enviado = enviar_notificacion_acceso(
-                'R. Gutiérrez Hair Studio', 
+                'Essencia Barber Study', 
                 $mensajeHtml, 
-                'Tus datos de acceso - R. Gutiérrez Hair Studio', 
+                'Tus datos de acceso - Essencia Barber Study', 
                 [$data['email']]
             );
         }
@@ -202,7 +252,9 @@ try {
         ]);
     }
 
-} catch (Exception $e) {
+} catch (\Throwable $e) {
+    // OJO: 'Exception' a secas apunta aquí a PHPMailer\PHPMailer\Exception por
+    // el 'use' de arriba, así que los errores de PDO se escapaban sin capturar.
     if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
     ob_clean();
     http_response_code(500);

@@ -109,7 +109,7 @@ try {
             $mensajeHtml = "
             <div style='font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
                 <div style='background-color: #1a1a1a; color: #ffffff; padding: 20px; text-align: center;'>
-                    <h1 style='margin: 0; font-size: 24px; letter-spacing: 1px;'>R. Gutiérrez Hair Studio</h1>
+                    <h1 style='margin: 0; font-size: 24px; letter-spacing: 1px;'>Essencia Barber Study</h1>
                 </div>
                 <div style='padding: 30px; line-height: 1.6; color: #333;'>
                     <p style='font-size: 18px;'>Hola <strong>$nombre_cliente</strong>,</p>
@@ -130,15 +130,15 @@ try {
                     <p style='font-size: 13px; color: #666; font-style: italic;'>* Te recomendamos cambiar tu contraseña al acceder por primera vez.</p>
                 </div>
                 <div style='background-color: #f9f9f9; color: #999; padding: 20px; text-align: center; font-size: 12px; border-top: 1px solid #eee;'>
-                    <p style='margin: 5px 0;'>&copy; " . date('Y') . " R. Gutiérrez Hair Studio. C. San Jose, 9, 41808 Villanueva del Ariscal, Sevilla</p>
+                    <p style='margin: 5px 0;'>&copy; " . date('Y') . " Essencia Barber Study. C. San Jose, 9, 41808 Villanueva del Ariscal, Sevilla</p>
                 </div>
             </div>
             ";
 
             $email_enviado = enviar_notificacion_acceso(
-                'R. Gutiérrez Hair Studio', 
+                'Essencia Barber Study', 
                 $mensajeHtml, 
-                'Tus datos de acceso - R. Gutiérrez Hair Studio', 
+                'Tus datos de acceso - Essencia Barber Study', 
                 [$correo]
             );
         }

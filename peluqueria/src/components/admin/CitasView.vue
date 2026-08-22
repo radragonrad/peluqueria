@@ -394,9 +394,9 @@
             </option>
           </select>
         
-          <div class="sesion-tag" v-if="peluqueroLogueado">
+          <div class="sesion-tag" v-if="peluqueroActivo">
             <span class="dot-active"></span>
-            Asignado por sesión: <strong>{{ peluqueroLogueado.nombre }}</strong>
+            Activo: <strong>{{ peluqueroActivo?.nombre }}</strong>
           </div>
         </div>
       </div>
@@ -442,15 +442,24 @@
 
   </div>
 </div>
+      <div class="form-row-icon form-row-repetir">
+        <span class="material-icons icon-label">repeat</span>
+        <label class="label-repetir">
+          <input type="checkbox" v-model="repetirHastaFinMes" class="check-repetir" />
+          Repetir semanalmente hasta fin de mes
+        </label>
+      </div>
+
     </div>
 
     <div class="modal-footer-calendar">
-      <button 
-        class="btn-save-calendar" 
-        @click="crearReservaBackend" 
+      <button
+        class="btn-save-calendar"
+        @click="crearReservaBackend"
         :disabled="!nuevaCita.cliente_id || !nuevaCita.servicio_id || cargandoGuardado"
       >
-        Guardar
+        <span v-if="cargandoGuardado && repetirHastaFinMes">Creando citas...</span>
+        <span v-else>Guardar</span>
       </button>
     </div>
   </div>
@@ -477,7 +486,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue';
+import { ref, reactive, onMounted, computed, watch, inject } from 'vue';
 import NuevoUsuarioModal from './NuevoUsuarioModal.vue';
 
 // ── Toast global de notificación ──
@@ -516,7 +525,7 @@ const mostrandoModalCrear = ref(false);
 const cargandoGuardado = ref(false);
 const busquedaCliente = ref('');
 const mostrarListaClientes = ref(false);
-const peluqueroLogueado = ref(null);
+const peluqueroActivo = inject('peluqueroActivo', ref(null));
 const horasDisponibles = ref([]);
 const cargandoHoras = ref(false);
 const servicios = ref([]); // Servicios con sus precios
@@ -551,11 +560,13 @@ const opcionesEstado = [
   { value: 'TODAS', label: 'Ver Todas' } // Opcional, por si quieres ver todo junto
 ];
 
+const repetirHastaFinMes = ref(false);
+
 // Objeto para la nueva cita
 const nuevaCita = ref({
   cliente_id: null,
   servicio_id: null,
-  peluquero_id: 8, // Por defecto Ruben
+  peluquero_id: null,
   fecha: new Date().toISOString().split('T')[0],
   hora: '10:00',
   estado: 'PENDIENTE'
@@ -573,7 +584,7 @@ const cargarHorasDisponibles = async () => {
 
   cargandoHoras.value = true;
   try {
-    const pId = nuevaCita.value.peluquero_id || 9;
+    const pId = nuevaCita.value.peluquero_id || peluqueroActivo.value?.id;
     const resp = await fetch(`/backend/api/obtener_horas.php?fecha=${nuevaCita.value.fecha}&servicio_id=${nuevaCita.value.servicio_id}&peluquero_id=${pId}`);
     const data = await resp.json();
     
@@ -623,10 +634,6 @@ const cargarPeluquerosYDetectarSesion = async () => {
       peluqueros.value = data.peluqueros;
     }
 
-    // Preselección automática del ID 9 (Jose Manuel)
-    if (peluqueros.value.length > 0) {
-        nuevaCita.value.peluquero_id = 9; 
-    }
   } catch (error) {
     console.error("Error al cargar peluqueros:", error);
     peluqueros.value = []; // Evitamos que sea null
@@ -660,12 +667,13 @@ const abrirModalNuevaCita = () => {
   nuevaCita.value = {
     cliente_id: null,
     servicio_id: null,
-    peluquero_id: 8, // Por defecto Ruben
+    peluquero_id: peluqueroActivo.value?.id ?? null,
     fecha: new Date().toISOString().split('T')[0], // Fecha de hoy por defecto
     hora: '10:00',
     estado: 'PENDIENTE'
   };
   
+  repetirHastaFinMes.value = false;
   // Mostramos el modal
   mostrandoModalCrear.value = true;
 };
@@ -715,29 +723,70 @@ const cargarClientes = async () => {
 };
 
 
+const fechasSemanalesHastaFinMes = (fechaInicio) => {
+  const fechas = [];
+  const base = new Date(fechaInicio + 'T12:00:00');
+  const ultimoDia = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+  const siguiente = new Date(base);
+  siguiente.setDate(siguiente.getDate() + 7);
+  while (siguiente <= ultimoDia) {
+    fechas.push(siguiente.toISOString().split('T')[0]);
+    siguiente.setDate(siguiente.getDate() + 7);
+  }
+  return fechas;
+};
+
 const crearReservaBackend = async () => {
-// 1. Validación corregida: usamos cliente_id
   if (!nuevaCita.value.cliente_id || !nuevaCita.value.servicio_id || !nuevaCita.value.hora) {
     mostrarToast("Completa todos los campos obligatorios: Cliente, Servicio y Hora", "error");
     return;
   }
 
-  cargandoGuardado.value = true; // Usa cargandoGuardado para el feedback del botón
+  cargandoGuardado.value = true;
   try {
+    // Primera cita (la fecha seleccionada)
     const res = await fetch('/backend/api/guardar_reserva_admin.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(nuevaCita.value)
     });
-
     const data = await res.json();
 
-    if (data.success) {
-      mostrandoModalCrear.value = false; // Cerramos el modal de creación
-      await cargarCitas(); // Recargamos la agenda para ver la nueva cita
-      mostrarToast("¡Cita guardada correctamente!", "exito");
-    } else {
+    if (!data.success) {
       mostrarToast("Error: " + (data.error || "No se pudo guardar"), "error");
+      return;
+    }
+
+    if (repetirHastaFinMes.value) {
+      const fechasExtra = fechasSemanalesHastaFinMes(nuevaCita.value.fecha);
+      let exitos = 1;
+      let errores = 0;
+
+      for (const fecha of fechasExtra) {
+        try {
+          const r = await fetch('/backend/api/guardar_reserva_admin.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...nuevaCita.value, fecha })
+          });
+          const d = await r.json();
+          if (d.success) exitos++;
+          else errores++;
+        } catch {
+          errores++;
+        }
+      }
+
+      mostrandoModalCrear.value = false;
+      await cargarCitas();
+      const msg = errores > 0
+        ? `${exitos} cita${exitos !== 1 ? 's' : ''} creada${exitos !== 1 ? 's' : ''}, ${errores} no disponible${errores !== 1 ? 's' : ''} (horario ocupado)`
+        : `${exitos} cita${exitos !== 1 ? 's' : ''} creada${exitos !== 1 ? 's' : ''} hasta fin de mes`;
+      mostrarToast(msg, errores > 0 ? 'error' : 'exito');
+    } else {
+      mostrandoModalCrear.value = false;
+      await cargarCitas();
+      mostrarToast("¡Cita guardada correctamente!", "exito");
     }
   } catch (error) {
     console.error("Error en la petición:", error);
@@ -928,14 +977,27 @@ const cargarHorasEdicion = async () => {
     );
     const data = await resp.json();
     let horas = Array.isArray(data) ? data : [];
-    // Añadimos la hora actual al listado si no está (porque el backend la excluye como bloqueo)
+
+    // Solo reinsertamos la hora original de la cita si seguimos editando el
+    // MISMO peluquero y fecha de la cita original; si se ha cambiado de
+    // peluquero o de día, esa hora no tiene por qué seguir siendo válida.
+    const esMismoPeluqueroYFecha =
+      peluquero_id == citaSeleccionada.value.peluquero_id &&
+      fecha === citaSeleccionada.value.fechaOriginal;
     const horaActual = citaSeleccionada.value.inicio; // formato HH:MM
-    if (horaActual && !horas.includes(horaActual)) {
+    if (esMismoPeluqueroYFecha && horaActual && !horas.includes(horaActual)) {
       horas = [horaActual, ...horas].sort();
     }
     horasEdicion.value = horas;
+
+    // Si la hora seleccionada ya no está entre las disponibles, la limpiamos
+    // para forzar a elegir una hora válida para el nuevo peluquero/fecha.
+    if (citaEditada.value.hora && !horas.includes(citaEditada.value.hora)) {
+      citaEditada.value.hora = null;
+    }
   } catch (e) {
     horasEdicion.value = [];
+    citaEditada.value.hora = null;
   } finally {
     cargandoHorasEdicion.value = false;
   }
@@ -1015,7 +1077,9 @@ const cargarCitas = async () => {
     const dias = diasSemana.value; // Usamos siempre los 7 días base para no perder citas al cambiar de mobile a desktop
     const desde = dias[0].fechaISO;
     const hasta = dias[dias.length - 1].fechaISO;
-    const response = await fetch(`/backend/api/gestion_reservas.php?desde=${desde}&hasta=${hasta}`);
+    const pId = peluqueroActivo.value?.id;
+    const url = `/backend/api/gestion_reservas.php?desde=${desde}&hasta=${hasta}${pId ? `&peluquero_id=${pId}` : ''}`;
+    const response = await fetch(url);
     const data = await response.json();
     
     // Mapeamos los datos para que tengan la estructura que necesita el calendario
@@ -1197,6 +1261,11 @@ watch(
 
 // Recargamos citas cuando el usuario navega a otra semana
 watch(fechaReferencia, () => {
+  cargarCitas();
+});
+
+// Recargamos citas cuando el admin cambia de peluquero en el selector
+watch(peluqueroActivo, () => {
   cargarCitas();
 });
 
@@ -2158,6 +2227,29 @@ display: flex;
   align-items: center;
   gap: 16px;
   margin-bottom: 16px;
+}
+
+.form-row-repetir {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.label-repetir {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: #444;
+  cursor: pointer;
+  user-select: none;
+}
+
+.check-repetir {
+  width: 17px;
+  height: 17px;
+  accent-color: #e75480;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .icon-label {

@@ -146,7 +146,7 @@ if ($action === 'register') {
     $mensaje = "
     <div style='font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
         <div style='background-color: #1a1a1a; color: #ffffff; padding: 20px; text-align: center;'>
-            <h1 style='margin: 0; font-size: 24px;'>R. Gutiérrez Hair Studio</h1>
+            <h1 style='margin: 0; font-size: 24px;'>Essencia Barber Study</h1>
         </div>
         <div style='padding: 30px; line-height: 1.6; color: #333;'>
             <p style='font-size: 18px;'>Hola <strong>$nombre_cliente</strong>,</p>

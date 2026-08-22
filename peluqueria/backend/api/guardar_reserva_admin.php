@@ -98,7 +98,7 @@ function enviarEmailConfirmacionCita($datos) {
     $mensaje_html = "
     <div style='font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
         <div style='background-color: #1a1a1a; color: #ffffff; padding: 20px; text-align: center;'>
-            <h1 style='margin: 0; font-size: 24px;'>R. Gutiérrez Hair Studio</h1>
+            <h1 style='margin: 0; font-size: 24px;'>Essencia Barber Study</h1>
         </div>
         <div style='padding: 30px; line-height: 1.6; color: #333;'>
             <p style='font-size: 18px;'>Hola <strong>{$datos['cliente_nombre']}</strong>,</p>
@@ -124,10 +124,10 @@ function enviarEmailConfirmacionCita($datos) {
         $mail->SMTPSecure = 'tls';
         $mail->Port       = 587;
         $mail->CharSet    = 'UTF-8';
-        $mail->setFrom('no-reply@rgutierrezhairstudio.com', 'R. Gutiérrez Hair Studio');
+        $mail->setFrom('no-reply@rgutierrezhairstudio.com', 'Essencia Barber Study');
         $mail->addAddress($datos['cliente_email'], $datos['cliente_nombre']);
         $mail->isHTML(true);
-        $mail->Subject = 'Confirmación de tu cita - R. Gutiérrez Hair Studio';
+        $mail->Subject = 'Confirmación de tu cita - Essencia Barber Study';
         $mail->Body    = $mensaje_html;
         $mail->send();
         return true;

@@ -209,6 +209,7 @@ const volverAtras = () => {
   diaSeleccionado.value = null;      // Limpia el día
   horaSeleccionada.value = null;     // Limpia la hora
   horariosDisponibles.value = [];    // Limpia la lista de horas
+  diasCerrados.value = [];           // Limpia el horario semanal del peluquero anterior
 };
 
 // 1. Detección de Horario Especial (AMARILLO)
@@ -263,17 +264,20 @@ const esDiaBloqueado = (dia) => {
   return false;
 };
 
-const cargarConfiguracionHorario = async () => {
+// Horario semanal del peluquero seleccionado (no el de la tienda general).
+// Si el peluquero no tiene un día configurado como abierto, ese día se marca cerrado.
+const cargarConfiguracionHorario = async (peluqueroId) => {
+  if (!peluqueroId) {
+    diasCerrados.value = [];
+    return;
+  }
   try {
-    const res = await fetch('/backend/api/get_horario_tienda.php');
+    const res = await fetch(`/backend/api/get_horario_tienda.php?peluquero_id=${peluqueroId}`);
     const data = await res.json();
     // Filtramos los días donde 'abierto' es 0
     diasCerrados.value = data.semanal
-      .filter(d => Number(d.abierto) === 0) 
+      .filter(d => Number(d.abierto) === 0)
       .map(d => Number(d.id_dia));
-
-    
-      
   } catch (error) {
     console.error("Error cargando configuración de días:", error);
   }
@@ -371,6 +375,7 @@ const seleccionarDia = (dia) => {
 const seleccionarPeluquero = (peluquero) => {
   peluqueroSeleccionado.value = peluquero;
   paso.value = 2; // Saltamos al calendario
+  cargarConfiguracionHorario(peluquero.id); // Horario propio de este peluquero
 };
 
 const cerrar = () => {
@@ -436,7 +441,6 @@ const confirmarReserva = async () => {
 };
 
 onMounted(async () => {
-  cargarConfiguracionHorario();
   cargarExcepciones();
   try {
     const response = await fetch('/backend/api/get_peluqueros.php');
@@ -509,7 +513,7 @@ onMounted(async () => {
   border-radius: 50%;
   overflow: hidden; /* Corta la imagen en círculo */
   border: 3px solid #eee;
-  background: #1a1a1a; /* Fondo por si la imagen es transparente */
+  background: #f3f3f3; /* Fondo por si la imagen es transparente */
 }
 
 .agent-img img {

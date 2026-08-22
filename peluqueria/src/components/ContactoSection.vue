@@ -47,9 +47,16 @@
           <h3>Ubicación</h3>
           <p>C. San Jose, 9, Villanueva del Ariscal</p>
           <div class="mini-map-container">
-            <img src="../assets/mapa-ubicacion.png" alt="Ubicación R. Gutiérrez Hair Studio" class="map-image">
+            <img src="../assets/mapa-ubicacion.png" alt="Ubicación Essencia Barber Study" class="map-image">
           </div>
           <a href="https://www.google.com/maps/search/?api=1&query=C.+San+Jose%2C+9%2C+41808+Villanueva+del+Ariscal%2C+Sevilla" target="_blank" class="btn-maps">CÓMO LLEGAR</a>
+        </div>
+
+        <div class="info-card review-card">
+          <div class="icon-box"><i class="fab fa-google"></i></div>
+          <h3>Tu opinión nos importa</h3>
+          <p>¿Te ha gustado tu experiencia?</p>
+          <a href="https://g.page/r/CaOgDoX1ryEDEBM/review" target="_blank" rel="noopener" class="btn-maps">DÉJANOS TU RESEÑA</a>
         </div>
       </div>
 
@@ -165,7 +172,7 @@ export default {
 /* --- ESTILO DE CARDS (MANTENIDO) --- */
 .contact-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 25px;
   margin-bottom: 80px;
 }
@@ -265,6 +272,10 @@ input:focus, select:focus, textarea:focus { border-color: #e75480; outline: none
 }
 
 .btn-send:hover { background: white; transform: scale(1.02); }
+
+@media (max-width: 1200px) {
+  .contact-grid { grid-template-columns: repeat(2, 1fr); }
+}
 
 @media (max-width: 992px) {
   .contact-grid { grid-template-columns: 1fr; }

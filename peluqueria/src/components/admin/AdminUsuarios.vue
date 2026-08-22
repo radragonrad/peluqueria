@@ -267,22 +267,28 @@ const quitarEtiqueta = async (etiquetaId) => {
 const handleFileUpload = (e) => { selectedFile.value = e.target.files[0]; };
 
 const toggleActivo = async (u) => {
+    const estadoAnterior = u.activo;
     const nuevoEstado = u.activo == 1 ? 0 : 1;
     const formData = new FormData();
     formData.append('id', u.id);
     formData.append('activo', nuevoEstado);
-    formData.append('nombre', u.nombre);
-    formData.append('email', u.email);
-    formData.append('rol', u.rol);
+
+    u.activo = nuevoEstado;
 
     try {
-        await fetch('/backend/api/gestion_usuarios.php', {
+        const res = await fetch('/backend/api/gestion_usuarios.php', {
             method: 'POST',
             credentials: 'include',
             body: formData
         });
-        u.activo = nuevoEstado;
-    } catch (e) { console.error(e); }
+        const data = await res.json();
+        if (!res.ok || data.success === false) throw new Error(data.error || 'Error al guardar el estado');
+    } catch (e) {
+        // Si el backend no lo ha guardado, deshacemos el cambio visual
+        u.activo = estadoAnterior;
+        console.error(e);
+        alert('No se ha podido cambiar el estado del usuario.');
+    }
 };
 
 const guardarUsuario = async () => {
@@ -595,11 +601,130 @@ input:checked + .slider:before { transform: translateX(20px); }
 .slide-enter-active, .slide-leave-active { transition: all 0.4s ease; }
 .slide-enter-from, .slide-leave-to { opacity: 0; transform: translateY(-30px); }
 
-/* Adaptación para móviles */
+/* --- RESPONSIVE --- */
+
+/* Tablets (iPad) y pantallas medianas */
+@media (max-width: 1100px) {
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+  }
+
+  .filters {
+    flex: 1;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .search-box input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .status-select {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .btn-nuevo {
+    justify-content: center;
+  }
+}
+
+/* Móviles y tablets estrechas: tabla → tarjetas apiladas */
+@media (max-width: 768px) {
+  .title-container h1 { font-size: 1.4rem; }
+
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-nuevo { width: 100%; }
+
+  .custom-table thead { display: none; }
+
+  .custom-table,
+  .custom-table tbody,
+  .custom-table tr,
+  .custom-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .custom-table tr {
+    padding: 12px 16px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .custom-table td {
+    padding: 8px 0;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .custom-table td::before {
+    content: attr(data-label);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    color: #94a3b8;
+    flex-shrink: 0;
+  }
+
+  .id-cell {
+    background: none;
+    padding: 8px 0;
+  }
+
+  .contact-cell,
+  .tags-container-table {
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .contact-cell { align-items: flex-end; }
+
+  .actions.text-right { justify-content: space-between; }
+
+  .pagination {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+/* Móviles estrechos */
 @media (max-width: 600px) {
   .form-grid, .form-grid-inner {
     grid-template-columns: 1fr;
   }
+
+  .form-card { padding: 20px; }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .btn-save, .btn-cancel {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .email-text { word-break: break-all; }
 }
 
 .id-cell {
